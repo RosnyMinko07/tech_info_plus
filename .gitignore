@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+database.db
+
+# Environment
+.env
+*.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node
+node_modules/
+frontend/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build
+frontend/build/
+frontend/dist/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+logs/
+*.log
+
+# Reports
+reports/
+
+# Temporary files
+*.tmp
+*.temp

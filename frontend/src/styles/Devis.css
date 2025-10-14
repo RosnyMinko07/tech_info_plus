@@ -1,0 +1,344 @@
+/* ============================================
+   STYLES SPÉCIFIQUES POUR LA PAGE DEVIS
+   Reproduction exacte de l'interface Python
+   ============================================ */
+
+.devis-container {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+
+.devis-header {
+  margin-bottom: 20px;
+}
+
+.devis-title {
+  font-size: 32px;
+  font-weight: bold;
+  color: var(--accent-bleu, #3B82F6);
+  margin: 0;
+  margin-bottom: 5px;
+}
+
+.devis-subtitle {
+  font-size: 16px;
+  color: var(--texte-secondaire, #94A3B8);
+  margin: 0;
+}
+
+/* ============================================
+   BARRE DE CONTRÔLE
+   ============================================ */
+
+.devis-control-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.search-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.search-input {
+  width: 300px;
+  height: 40px;
+  padding: 0 15px;
+  background-color: var(--bg-tertiaire, #0F172A);
+  border: 1px solid var(--bordure, #334155);
+  border-radius: 8px;
+  color: var(--texte-principal, #FFFFFF);
+  font-size: 14px;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--accent-bleu, #3B82F6);
+}
+
+.search-input::placeholder {
+  color: var(--texte-secondaire, #94A3B8);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ============================================
+   CARTES DE STATISTIQUES (Style Python)
+   ============================================ */
+
+.devis-stats-cards {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.devis-stat-card {
+  flex: 0 0 200px;
+  min-height: 100px;
+  background-color: var(--bg-secondaire, #1E293B);
+  border: 1px solid var(--bordure, #334155);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 15px;
+  gap: 5px;
+  overflow: hidden;
+}
+
+.devis-stat-card .stat-icon {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.devis-stat-card .stat-label {
+  font-size: 14px;
+  color: var(--texte-principal, #FFFFFF);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.devis-stat-card .stat-value {
+  font-size: 28px;
+  font-weight: bold;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ============================================
+   TABLEAU
+   ============================================ */
+
+.devis-table-container {
+  background-color: var(--bg-secondaire, #1E293B);
+  border: 1px solid var(--bordure, #334155);
+  border-radius: 8px;
+  padding: 10px;
+  overflow-x: auto;
+}
+
+.devis-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.devis-table thead {
+  background-color: var(--bg-tertiaire, #0F172A);
+  border-bottom: 2px solid var(--bordure, #334155);
+}
+
+.devis-table thead th {
+  padding: 15px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--texte-principal, #FFFFFF);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.devis-table tbody tr {
+  border-bottom: 1px solid var(--bordure, #334155);
+  transition: background-color 0.2s;
+}
+
+.devis-table tbody tr:hover {
+  background-color: var(--bg-tertiaire, #0F172A);
+}
+
+.devis-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.devis-table tbody td {
+  padding: 12px 15px;
+  color: var(--texte-principal, #FFFFFF);
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.devis-table tbody td strong {
+  color: var(--texte-principal, #FFFFFF);
+  font-weight: 600;
+}
+
+.devis-table tbody td small {
+  font-size: 12px;
+  color: var(--texte-secondaire, #94A3B8);
+}
+
+/* ============================================
+   BOUTONS
+   ============================================ */
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-success {
+  background-color: #10B981;
+  color: white;
+}
+
+.btn-success:hover {
+  background-color: #059669;
+}
+
+.btn-secondary {
+  background-color: #6B7280;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #4B5563;
+}
+
+.btn-primary {
+  background-color: #3B82F6;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #2563EB;
+}
+
+.btn-warning {
+  background-color: #F59E0B;
+  color: white;
+}
+
+.btn-warning:hover {
+  background-color: #D97706;
+}
+
+.btn-icon {
+  width: 35px;
+  height: 35px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.btn-icon:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.action-buttons-group {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ============================================
+   BADGE STATUT
+   ============================================ */
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ============================================
+   LOADING
+   ============================================ */
+
+.loading {
+  text-align: center;
+  padding: 60px 20px;
+  font-size: 16px;
+  color: var(--texte-secondaire, #94A3B8);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 768px) {
+  .devis-stats-cards {
+    flex-direction: column;
+  }
+
+  .devis-stat-card {
+    flex: 1;
+    width: 100%;
+  }
+
+  .devis-control-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-group {
+    width: 100%;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+
+  .action-buttons {
+    justify-content: stretch;
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .devis-table-container {
+    overflow-x: auto;
+  }
+
+  .devis-table {
+    min-width: 800px;
+  }
+}

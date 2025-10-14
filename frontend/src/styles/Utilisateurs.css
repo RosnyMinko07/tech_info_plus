@@ -1,0 +1,245 @@
+/* ============================================
+   STYLES POUR LE MODULE UTILISATEURS
+   ============================================ */
+
+.utilisateurs-container {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+
+.utilisateurs-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.utilisateurs-title {
+  font-size: 32px;
+  font-weight: bold;
+  color: var(--accent-bleu, #3B82F6);
+  margin: 0;
+}
+
+/* ============================================
+   BARRE DE CONTRÔLE
+   ============================================ */
+
+.utilisateurs-control-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.search-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex: 1;
+}
+
+.search-group svg {
+  color: var(--texte-secondaire, #94A3B8);
+  font-size: 18px;
+}
+
+.search-input {
+  flex: 1;
+  max-width: 300px;
+  padding: 10px 15px;
+  background-color: var(--bg-tertiaire, #0F172A);
+  border: 1px solid var(--bordure, #334155);
+  border-radius: 6px;
+  color: var(--texte-principal, #FFFFFF);
+  font-size: 14px;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--accent-bleu, #3B82F6);
+}
+
+.search-input::placeholder {
+  color: var(--texte-secondaire, #94A3B8);
+}
+
+/* ============================================
+   TABLEAU
+   ============================================ */
+
+.utilisateurs-table-container {
+  background-color: var(--bg-secondaire, #1E293B);
+  border: 1px solid var(--bordure, #334155);
+  border-radius: 8px;
+  padding: 10px;
+  overflow-x: auto;
+}
+
+.utilisateurs-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.utilisateurs-table thead {
+  background-color: var(--bg-tertiaire, #0F172A);
+  border-bottom: 2px solid var(--bordure, #334155);
+}
+
+.utilisateurs-table thead th {
+  padding: 15px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--texte-principal, #FFFFFF);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.utilisateurs-table tbody tr {
+  border-bottom: 1px solid var(--bordure, #334155);
+  transition: background-color 0.2s;
+}
+
+.utilisateurs-table tbody tr:hover {
+  background-color: var(--bg-tertiaire, #0F172A);
+}
+
+.utilisateurs-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.utilisateurs-table tbody td {
+  padding: 12px 15px;
+  color: var(--texte-principal, #FFFFFF);
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.utilisateurs-table tbody td strong {
+  font-weight: 600;
+}
+
+/* ============================================
+   BADGES
+   ============================================ */
+
+.role-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ============================================
+   BOUTONS
+   ============================================ */
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-success {
+  background-color: var(--accent-vert, #10B981);
+  color: white;
+}
+
+.btn-success:hover {
+  background-color: #059669;
+}
+
+.btn-secondary {
+  background-color: #6B7280;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #4B5563;
+}
+
+.btn-icon {
+  width: 35px;
+  height: 35px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.btn-icon:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.action-buttons-group {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ============================================
+   LOADING
+   ============================================ */
+
+.loading {
+  text-align: center;
+  padding: 60px 20px;
+  font-size: 16px;
+  color: var(--texte-secondaire, #94A3B8);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 768px) {
+  .utilisateurs-control-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-group {
+    width: 100%;
+  }
+
+  .search-input {
+    max-width: 100%;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .utilisateurs-table {
+    min-width: 900px;
+  }
+}

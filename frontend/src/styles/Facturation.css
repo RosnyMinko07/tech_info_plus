@@ -1,0 +1,618 @@
+/* ============================================
+   STYLES SPÉCIFIQUES POUR LA PAGE FACTURATION
+   REPRODUCTION EXACTE DU CODE PYTHON
+   ============================================ */
+
+.facturation-container {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+  background-color: var(--bg-principal);
+  min-height: 100vh;
+}
+
+/* Titre comme Python */
+.facturation-title {
+  font-size: 28px;
+  font-weight: bold;
+  color: var(--texte-principal);
+  margin: 10px 0 15px 0;
+  text-align: center;
+}
+
+/* Barre de contrôle comme Python */
+.facturation-control-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+  padding: 0 20px;
+}
+
+.search-section {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.search-input {
+  width: 300px;
+  height: 40px;
+  padding: 0 15px;
+  border: 1px solid var(--bordure);
+  border-radius: 6px;
+  background-color: var(--bg-secondaire);
+  color: var(--texte-principal);
+  font-size: 14px;
+}
+
+.btn-search {
+  width: 50px;
+  height: 40px;
+  background-color: var(--accent);
+  border: none;
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.control-buttons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.btn-new {
+  width: 150px;
+  height: 40px;
+  background-color: #28a745;
+  border: none;
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-new:hover {
+  background-color: #218838;
+}
+
+.btn-refresh {
+  width: 120px;
+  height: 40px;
+  background-color: #6c757d;
+  border: none;
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-refresh:hover {
+  background-color: #5a6268;
+}
+
+.export-buttons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.btn-export {
+  width: 100px;
+  height: 40px;
+  background-color: #007bff;
+  border: none;
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-print {
+  width: 100px;
+  height: 40px;
+  background-color: #fd7e14;
+  border: none;
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Cartes de statistiques comme Python */
+.facturation-stats {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 10px;
+  padding: 0 20px;
+  flex-wrap: wrap;
+}
+
+.stat-card {
+  flex: 1;
+  min-width: 220px;
+  max-width: 250px;
+  min-height: 100px;
+  background-color: var(--bg-secondaire);
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.stat-icon {
+  font-size: 24px;
+  margin-right: 10px;
+}
+
+.stat-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.stat-label {
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--texte-secondaire);
+  margin-bottom: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--texte-principal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Tableau des factures comme Python */
+.facturation-table {
+  margin: 0 20px;
+  background-color: var(--bg-secondaire);
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table-headers {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr 1fr 1fr 1fr;
+  background-color: var(--bg-tertiaire);
+  height: 35px;
+  border-bottom: 1px solid var(--bordure);
+}
+
+.header-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--texte-principal);
+  padding: 0 10px;
+  border-right: 1px solid var(--bordure);
+}
+
+.header-cell:last-child {
+  border-right: none;
+}
+
+.table-content {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr 1fr 1fr 1fr;
+  min-height: 45px;
+  border-bottom: 1px solid var(--bordure);
+  align-items: center;
+}
+
+.table-row:hover {
+  background-color: var(--bg-tertiaire);
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+.table-cell {
+  padding: 10px;
+  border-right: 1px solid var(--bordure);
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+}
+
+.table-cell:last-child {
+  border-right: none;
+}
+
+.client-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.client-name {
+  font-weight: 600;
+  color: var(--texte-principal);
+}
+
+.client-phone {
+  font-size: 12px;
+  color: var(--texte-secondaire);
+}
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.amount {
+  color: var(--accent);
+  font-weight: bold;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 5px;
+}
+
+.btn-sm {
+  width: 35px;
+  height: 35px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  padding: 0;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-sm:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-sm svg {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-info {
+  background-color: #17a2b8;
+  color: #ffffff;
+}
+
+.btn-warning {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.btn-primary {
+  background-color: #007bff;
+  color: #ffffff;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  color: #ffffff;
+}
+
+.no-data {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px;
+  color: var(--texte-secondaire);
+}
+
+.no-data-icon {
+  font-size: 48px;
+  margin-bottom: 15px;
+  opacity: 0.5;
+}
+
+/* ============================================
+   MODAL FACTURATION - REPRODUCTION EXACTE PYTHON
+   ============================================ */
+
+/* Overlay comme Python */
+.facturation-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Container principal comme Python (900x700) */
+.facturation-modal-container {
+  width: 900px;
+  height: 700px;
+  background-color: var(--bg-secondaire);
+  border: 1px solid var(--bordure);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Header comme Python */
+.facturation-modal-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--bordure);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--bg-secondaire);
+}
+
+.facturation-modal-title {
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--texte-principal);
+  margin: 0;
+}
+
+.facturation-modal-close {
+  background-color: #dc3545;
+  border: none;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.facturation-modal-close:hover {
+  background-color: #c82333;
+}
+
+/* Contenu scrollable comme Python */
+.facturation-modal-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  background-color: var(--bg-principal);
+}
+
+.facturation-modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.facturation-modal-content::-webkit-scrollbar-track {
+  background: var(--bg-tertiaire);
+}
+
+.facturation-modal-content::-webkit-scrollbar-thumb {
+  background: var(--bordure);
+  border-radius: 4px;
+}
+
+.facturation-modal-content::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+/* ============================================
+   FORMULAIRE - GRID EXACT COMME PYTHON
+   ============================================ */
+
+/* Grid EXACT comme Python - 4 colonnes */
+.form-grid-python {
+  display: grid;
+  grid-template-columns: auto 300px 30px auto 200px;
+  gap: 15px;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 10px;
+}
+
+.form-group {
+  display: contents;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--texte-principal);
+  text-align: left;
+  padding-right: 15px;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--bordure);
+  border-radius: 6px;
+  background-color: var(--bg-secondaire);
+  color: var(--texte-principal);
+  font-size: 14px;
+}
+
+/* Configuration spécifique pour chaque ligne comme Python */
+/* Row 0: Numéro | Date */
+.form-grid-python .form-group:nth-child(1) { grid-row: 1; grid-column: 1; } /* Label Numéro */
+.form-grid-python .form-group:nth-child(2) { grid-row: 1; grid-column: 2; } /* Input Numéro */
+.form-grid-python .form-group:nth-child(3) { grid-row: 1; grid-column: 4; } /* Label Date */
+.form-grid-python .form-group:nth-child(4) { grid-row: 1; grid-column: 5; } /* Input Date */
+
+/* Row 1: Client | Statut */
+.form-grid-python .form-group:nth-child(5) { grid-row: 2; grid-column: 1; } /* Label Client */
+.form-grid-python .form-group:nth-child(6) { grid-row: 2; grid-column: 2; } /* Combo Client */
+.form-grid-python .form-group:nth-child(7) { grid-row: 2; grid-column: 4; } /* Label Statut */
+.form-grid-python .form-group:nth-child(8) { grid-row: 2; grid-column: 5; } /* Combo Statut */
+
+/* Row 2: Montant HT | Montant TTC */
+.form-grid-python .form-group:nth-child(9) { grid-row: 3; grid-column: 1; } /* Label Montant HT */
+.form-grid-python .form-group:nth-child(10) { grid-row: 3; grid-column: 2; } /* Input Montant HT */
+.form-grid-python .form-group:nth-child(11) { grid-row: 3; grid-column: 4; } /* Label Montant TTC */
+.form-grid-python .form-group:nth-child(12) { grid-row: 3; grid-column: 5; } /* Input Montant TTC */
+
+/* Row 3: Montant payé | Reste à payer */
+.form-grid-python .form-group:nth-child(13) { grid-row: 4; grid-column: 1; } /* Label Montant payé */
+.form-grid-python .form-group:nth-child(14) { grid-row: 4; grid-column: 2; } /* Input Montant payé */
+.form-grid-python .form-group:nth-child(15) { grid-row: 4; grid-column: 4; } /* Label Reste à payer */
+.form-grid-python .form-group:nth-child(16) { grid-row: 4; grid-column: 5; } /* Input Reste à payer */
+
+/* Row 4: Précompte checkbox (colspan 2) */
+.form-grid-python .form-group:nth-child(17) { grid-row: 5; grid-column: 1 / 3; } /* Checkbox Précompte */
+
+/* Row 5: Description (colspan 4) */
+.form-grid-python .form-group:nth-child(18) { grid-row: 6; grid-column: 1; } /* Label Description */
+.form-grid-python .form-group:nth-child(19) { grid-row: 6; grid-column: 2 / 6; } /* Input Description */
+
+/* Styles spéciaux pour colspan */
+.checkbox-group {
+  grid-column: 1 / 3 !important;
+}
+
+.description-group {
+  grid-column: 2 / 6 !important;
+}
+
+.description-group input {
+  width: 100%;
+}
+
+/* Boutons en bas comme Python */
+.facturation-modal-buttons {
+  height: 80px;
+  padding: 20px;
+  border-top: 2px solid var(--bordure);
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  background-color: #e3f2fd;
+}
+
+.btn-enregistrer {
+  background-color: #28a745 !important;
+  border-color: #28a745 !important;
+  font-weight: bold;
+  height: 40px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 6px;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.btn-enregistrer:hover {
+  background-color: #218838 !important;
+  border-color: #1e7e34 !important;
+}
+
+.btn-annuler {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+  font-weight: bold;
+  height: 40px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 6px;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.btn-annuler:hover {
+  background-color: #5a6268 !important;
+  border-color: #545b62 !important;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .facturation-stats {
+    flex-wrap: wrap;
+  }
+  
+  .stat-card {
+    flex: 1;
+    min-width: 180px;
+  }
+}
+
+@media (max-width: 1000px) {
+  .facturation-modal-container {
+    width: 95%;
+    height: 90%;
+  }
+}
+
+@media (max-width: 768px) {
+  .facturation-control-bar {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .search-section,
+  .control-buttons,
+  .export-buttons {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .table-headers,
+  .table-row {
+    grid-template-columns: 1fr 1fr;
+    font-size: 12px;
+  }
+  
+  .table-cell:nth-child(n+3) {
+    display: none;
+  }
+  
+  .facturation-modal-container {
+    width: 98%;
+    height: 95%;
+  }
+}
+
+/* Affichage du montant en 3 lignes (EXACTEMENT comme Python ligne 849-915) */
+.montant-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+
+.montant-total {
+  font-weight: bold !important;
+  color: var(--texte-principal) !important;
+  font-size: 10px !important;
+}
