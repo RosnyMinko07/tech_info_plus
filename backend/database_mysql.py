@@ -21,8 +21,9 @@ MYSQL_USER = os.getenv('MYSQL_USER', 'root')
 MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', '')
 MYSQL_DATABASE = os.getenv('MYSQL_DATABASE', 'tech_info_plus')
 
-# Créer l'URL de connexion
-DATABASE_URL = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}?charset=utf8mb4"
+# Créer l'URL de connexion (supporte MySQL et PostgreSQL)
+# Si DATABASE_URL est défini dans l'environnement, il sera utilisé (priorité pour PostgreSQL Supabase)
+DATABASE_URL = os.getenv('DATABASE_URL') or f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}?charset=utf8mb4"
 
 # Créer le moteur SQLAlchemy
 engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True)
