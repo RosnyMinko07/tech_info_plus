@@ -1,0 +1,192 @@
+═══════════════════════════════════════════════════════════════════
+GUIDE DE MIGRATION DES DONNÉES MYSQL → SUPABASE
+═══════════════════════════════════════════════════════════════════
+
+Ce script va transférer TOUTES vos données de MySQL vers Supabase:
+✅ Utilisateurs (avec mots de passe hashés)
+✅ Clients
+✅ Fournisseurs
+✅ Articles
+✅ Devis et lignes de devis
+✅ Factures et lignes de facture
+✅ Règlements
+✅ Ventes comptoir
+✅ Mouvements de stock
+✅ Signalements de bugs
+✅ Configuration entreprise
+
+
+PRÉREQUIS
+───────────────────────────────────────────────────────────────────
+
+1. ✅ Les tables doivent être créées sur Supabase (backend/supabase_schema.sql)
+2. ✅ Votre base MySQL locale doit être accessible
+3. ✅ Vous devez avoir votre DATABASE_URL Supabase
+
+
+ÉTAPE 1: INSTALLER LES DÉPENDANCES
+───────────────────────────────────────────────────────────────────
+
+Ouvrez un terminal dans le dossier backend:
+
+cd backend
+pip install pymysql psycopg2-binary python-dotenv
+
+
+ÉTAPE 2: VÉRIFIER VOTRE CONFIGURATION MYSQL
+───────────────────────────────────────────────────────────────────
+
+Ouvrez backend/config.env et vérifiez:
+
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_USER=root
+MYSQL_PASSWORD=votre_mot_de_passe
+MYSQL_DATABASE=tech_info_plus
+
+
+ÉTAPE 3: RÉCUPÉRER VOTRE DATABASE_URL SUPABASE
+───────────────────────────────────────────────────────────────────
+
+1. Allez sur https://supabase.com/dashboard
+2. Sélectionnez votre projet
+3. Project Settings > Database
+4. Connection string > URI
+5. Copiez la chaîne complète:
+   postgresql://postgres:[PASSWORD]@db.xxx.supabase.co:5432/postgres
+6. Remplacez [PASSWORD] par votre vrai mot de passe
+
+
+ÉTAPE 4: EXÉCUTER LA MIGRATION
+───────────────────────────────────────────────────────────────────
+
+Dans le terminal (dossier backend):
+
+python migrate_to_supabase.py
+
+Le script va vous demander:
+"Entrez votre DATABASE_URL Supabase: "
+
+Collez votre DATABASE_URL complète et appuyez sur Entrée.
+
+
+ÉTAPE 5: ATTENDRE LA FIN
+───────────────────────────────────────────────────────────────────
+
+Le script va:
+1. Se connecter à MySQL
+2. Se connecter à Supabase
+3. Migrer chaque table dans l'ordre
+4. Afficher la progression:
+   📋 Migration de la table 'utilisateur'...
+      ✅ 5 lignes migrées
+   
+   📋 Migration de la table 'client'...
+      ✅ 48 lignes migrées
+   
+   etc.
+
+5. Afficher le message final:
+   ✅ MIGRATION TERMINÉE AVEC SUCCÈS !
+
+
+VÉRIFICATION
+───────────────────────────────────────────────────────────────────
+
+Après la migration, vérifiez sur Supabase:
+
+1. Allez dans "Table Editor"
+2. Vérifiez que les tables contiennent des données:
+   - utilisateur: devrait avoir vos utilisateurs
+   - client: devrait avoir vos clients
+   - facture: devrait avoir vos factures
+   - etc.
+
+
+EN CAS D'ERREUR
+───────────────────────────────────────────────────────────────────
+
+Si une erreur se produit:
+❌ ERREUR DURANT LA MIGRATION
+✅ Rollback effectué, aucune donnée n'a été modifiée
+
+Le script annule automatiquement toutes les modifications.
+Vos données Supabase restent intactes.
+
+Causes possibles:
+1. DATABASE_URL incorrect
+2. MySQL non accessible
+3. Tables pas créées sur Supabase
+4. Problème de connexion internet
+
+
+APRÈS LA MIGRATION RÉUSSIE
+───────────────────────────────────────────────────────────────────
+
+1. ✅ Toutes vos données sont sur Supabase
+2. ✅ Les utilisateurs peuvent se connecter avec leurs anciens mots de passe
+3. ✅ Tout l'historique est préservé
+
+Prochaines étapes:
+1. Configurer DATABASE_URL sur Render
+2. Redéployer le backend
+3. Tester la connexion
+
+
+EXEMPLE D'EXÉCUTION RÉUSSIE
+───────────────────────────────────────────────────────────────────
+
+$ python migrate_to_supabase.py
+Entrez votre DATABASE_URL Supabase: postgresql://postgres:xxx@db.xxx.supabase.co:5432/postgres
+
+======================================================================
+MIGRATION MYSQL → SUPABASE POSTGRESQL
+======================================================================
+
+📦 Connexion à MySQL...
+✅ Connexion MySQL réussie
+
+📦 Connexion à Supabase PostgreSQL...
+✅ Connexion Supabase réussie
+
+🚀 Début de la migration...
+
+📋 Migration de la table 'entreprise'...
+   ✅ 1 lignes migrées
+
+📋 Migration de la table 'utilisateur'...
+   ✅ 5 lignes migrées
+
+📋 Migration de la table 'client'...
+   ✅ 48 lignes migrées
+
+📋 Migration de la table 'article'...
+   ✅ 8 lignes migrées
+
+📋 Migration de la table 'devis'...
+   ✅ 34 lignes migrées
+
+📋 Migration de la table 'facture'...
+   ✅ 39 lignes migrées
+
+======================================================================
+✅ MIGRATION TERMINÉE AVEC SUCCÈS !
+======================================================================
+
+Toutes vos données ont été transférées vers Supabase PostgreSQL.
+Vous pouvez maintenant:
+1. Configurer DATABASE_URL sur Render
+2. Redéployer votre backend
+3. Tester la connexion avec vos utilisateurs existants
+
+🔒 Connexions fermées
+
+
+IMPORTANT
+───────────────────────────────────────────────────────────────────
+
+⚠️ Ce script ne modifie PAS votre base MySQL locale
+⚠️ Il copie seulement les données vers Supabase
+⚠️ Votre base MySQL reste intacte
+⚠️ Vous pouvez relancer le script si nécessaire (il faudra vider Supabase avant)
+
