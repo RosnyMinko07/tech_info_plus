@@ -5,9 +5,14 @@
 
 import axios from 'axios';
 
-// 🔥 Détection automatique de l'URL du backend
-// Si on accède via une IP (pas localhost), utiliser cette IP pour le backend aussi
+// 🔥 URL du backend - Détection automatique pour développement local
+// En production, utilise REACT_APP_API_URL ou URL de Render
 const getApiBaseUrl = () => {
+  // Variable d'environnement prioritaire (pour Netlify/Render)
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  
   const hostname = window.location.hostname;
   
   // Si on accède via localhost, utiliser localhost pour le backend
