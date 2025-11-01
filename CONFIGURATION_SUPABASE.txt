@@ -1,0 +1,46 @@
+═══════════════════════════════════════════════════════════════════
+  🔧 CONFIGURATION SUPABASE POUR RENDER
+═══════════════════════════════════════════════════════════════════
+
+📝 Étapes pour configurer votre base Supabase MySQL sur Render :
+
+1️⃣ RÉCUPÉRER VOS CREDENTIALS SUPABASE MYSQL
+─────────────────────────────────────────────────────────────────
+
+   Sur votre dashboard Supabase :
+   
+   Allez dans : Settings → Database → Connection string (MySQL)
+   
+   Vous verrez quelque chose comme :
+   mysql://user:password@host:3306/database
+
+
+2️⃣ SUR RENDER.COM
+─────────────────────────────────────────────────────────────────
+
+   A. Créez un nouveau Web Service
+   
+   B. Dans "Environment Variables", ajoutez :
+   
+      MYSQL_HOST=db.xxxxx.supabase.co
+      MYSQL_PORT=3306
+      MYSQL_USER=postgres.xxxxx
+      MYSQL_PASSWORD=votre_password
+      MYSQL_DATABASE=postgres
+      ENVIRONMENT=production
+      
+   (Remplacez par vos vraies valeurs !)
+
+
+3️⃣ VÉRIFICATION
+─────────────────────────────────────────────────────────────────
+
+   Une fois déployé, testez :
+   
+   ✅ Votre URL Render : https://tech-info-plus-backend.onrender.com
+   ✅ API Docs : https://tech-info-plus-backend.onrender.com/docs
+   ✅ Health check : https://tech-info-plus-backend.onrender.com/health
+
+
+═══════════════════════════════════════════════════════════════════
+
