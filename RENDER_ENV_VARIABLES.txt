@@ -1,0 +1,102 @@
+================================================================
+VARIABLES D'ENVIRONNEMENT POUR RENDER
+================================================================
+Copiez ces variables dans Render > Environment Variables
+================================================================
+
+🔥 VARIABLE PRINCIPALE (OBLIGATOIRE)
+────────────────────────────────────────────────────────────────
+
+Key: DATABASE_URL
+Value: postgresql://postgres:jojo%409999@db.wcianircmewxqrbsmmvo.supabase.co:5432/postgres
+
+⚠️ ATTENTION: Le @ dans le mot de passe doit être encodé en %40
+   jojo@9999 → jojo%409999
+
+
+================================================================
+AUTRES VARIABLES (Optionnelles)
+================================================================
+
+Key: API_HOST
+Value: 0.0.0.0
+
+Key: API_PORT
+Value: 8000
+
+Key: API_DEBUG
+Value: False
+
+Key: CORS_ORIGINS
+Value: https://votre-frontend.vercel.app
+
+(Remplacez par votre vraie URL Vercel)
+
+
+================================================================
+COMMENT AJOUTER CES VARIABLES SUR RENDER
+================================================================
+
+1. Allez sur https://dashboard.render.com
+2. Cliquez sur votre service backend
+3. Cliquez sur "Environment" dans le menu de gauche
+4. Pour chaque variable ci-dessus:
+   - Cliquez sur "Add Environment Variable"
+   - Copiez le "Key" (ex: DATABASE_URL)
+   - Copiez le "Value" (ex: postgresql://...)
+   - Cliquez sur "Add"
+5. Une fois TOUTES les variables ajoutées, cliquez sur "Save Changes"
+6. Redéployez: Manual Deploy > Deploy latest commit
+
+
+================================================================
+VÉRIFICATION APRÈS DÉPLOIEMENT
+================================================================
+
+Dans les logs Render, vous devriez voir:
+✅ "Application startup complete"
+✅ Pas d'erreur de connexion
+
+Vous NE devriez PLUS voir:
+❌ "Impossible de se connecter à MySQL"
+❌ "Exception in ASGI application"
+❌ "sqlalchemy.engine.base"
+
+
+================================================================
+ORDRE D'IMPORTANCE DES VARIABLES
+================================================================
+
+1. DATABASE_URL (CRITIQUE - Sans ça, rien ne marche)
+2. CORS_ORIGINS (Important pour que le frontend puisse communiquer)
+3. API_DEBUG (Mettre False en production)
+4. API_HOST et API_PORT (Render les gère automatiquement)
+
+
+================================================================
+DÉPANNAGE
+================================================================
+
+Si après avoir ajouté DATABASE_URL, vous avez toujours l'erreur:
+
+1. Vérifiez que DATABASE_URL est bien dans la liste des variables
+2. Vérifiez que le @ est bien encodé en %40
+3. Vérifiez qu'il n'y a pas d'espace avant ou après l'URL
+4. Redéployez le backend (Manual Deploy)
+5. Attendez 2-3 minutes que le déploiement se termine
+6. Vérifiez les logs
+
+
+================================================================
+EXEMPLE DE CONFIGURATION COMPLÈTE
+================================================================
+
+DATABASE_URL = postgresql://postgres:jojo%409999@db.wcianircmewxqrbsmmvo.supabase.co:5432/postgres
+API_HOST = 0.0.0.0
+API_PORT = 8000
+API_DEBUG = False
+CORS_ORIGINS = https://tech-info-plus.vercel.app
+
+
+================================================================
+
