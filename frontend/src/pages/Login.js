@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { FaUser, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { authService } from '../services/api';
 import '../styles/Login.css';
@@ -105,19 +106,35 @@ function Login() {
       }, 500);
       
     } catch (error) {
-      console.error('Erreur de connexion:', error);
+      console.error('🔴 Erreur de connexion:', error);
+      console.log('🔴 Status:', error.response?.status);
+      console.log('🔴 Data:', error.response?.data);
       
       // Messages d'erreur précis selon le status HTTP
       if (error.response?.status === 401) {
         const detail = error.response?.data?.detail || 'Identifiants incorrects';
+        console.log('🔴 Affichage toast erreur 401:', detail);
         
-        // Afficher le message du backend
-        toast.error('❌ ' + detail);
+        // TEMPORAIRE : Alert pour tester
+        alert('❌ ' + detail);
+        
+        // Afficher le toast aussi
+        toast.error('❌ ' + detail, {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
       } else if (error.response?.status === 500) {
+        console.log('🔴 Affichage toast erreur 500');
         toast.error('❌ Erreur serveur. Contactez l\'administrateur');
       } else if (error.code === 'ERR_NETWORK') {
+        console.log('🔴 Affichage toast erreur réseau');
         toast.error('❌ Impossible de se connecter au serveur');
       } else {
+        console.log('🔴 Affichage toast erreur générique');
         toast.error(error.response?.data?.detail || '❌ Identifiants incorrects');
       }
     } finally {
@@ -125,64 +142,8 @@ function Login() {
     }
   };
 
-  // Vérifier si l'utilisateur est déjà connecté et charger l'email mémorisé
+  // Charger l'email mémorisé seulement
   React.useEffect(() => {
-    // Si un token existe, rediriger vers la première page accessible
-    const token = localStorage.getItem('token');
-    const user = localStorage.getItem('user');
-    
-    if (token && user) {
-      const userData = JSON.parse(user);
-      
-      // Parser les droits (peut être une chaîne JSON ou déjà un objet)
-      let droits = {};
-      if (userData.droits) {
-        // Cas spécial : Admin avec droits = "TOUS"
-        if (userData.droits === 'TOUS' || userData.role === 'ADMIN') {
-          droits = {
-            gestion_clients: true,
-            gestion_produits: true,
-            gestion_devis: true,
-            gestion_factures: true,
-            gestion_reglements: true,
-            gestion_avoirs: true,
-            gestion_comptoir: true,
-            gestion_stock: true,
-            gestion_rapports: true,
-            gestion_utilisateurs: true
-          };
-        } else {
-          try {
-            droits = typeof userData.droits === 'string' ? JSON.parse(userData.droits) : userData.droits;
-          } catch (e) {
-            console.error('Erreur parsing droits:', e);
-            droits = {};
-          }
-        }
-      }
-      
-      console.log('🔑 Droits de l\'utilisateur (auto-login):', droits);
-      
-      // Ordre de priorité des pages
-      // Dashboard en priorité pour admin/gestionnaires, Comptoir pour vendeurs
-      if (droits.gestion_rapports) {
-        navigate('/dashboard');
-      } else if (droits.gestion_comptoir) {
-        navigate('/comptoir');
-      } else if (droits.gestion_factures) {
-        navigate('/facturation');
-      } else if (droits.gestion_clients) {
-        navigate('/clients');
-      } else if (droits.gestion_produits) {
-        navigate('/articles');
-      } else if (droits.gestion_stock) {
-        navigate('/stock');
-      } else {
-        navigate('/signaler-bug');
-      }
-      return;
-    }
-    
     // Charger l'email mémorisé
     const savedEmail = localStorage.getItem('remember_email');
     if (savedEmail) {
@@ -193,10 +154,32 @@ function Login() {
 
   return (
     <div className="login-container">
+      {/* ToastContainer pour afficher les notifications */}
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        closeOnClick
+        pauseOnHover
+        draggable
+        theme="colored"
+        style={{ zIndex: 99999 }}
+      />
+      
       <div className="login-box">
-        {/* Icône utilisateur */}
+        {/* Logo de l'entreprise */}
         <div className="login-icon">
-          <FaUser className="user-icon" />
+          <img 
+            src="/logo.png" 
+            alt="Tech Info Plus" 
+            className="logo-icon"
+            onError={(e) => {
+              // Si le logo n'est pas trouvé, afficher l'icône utilisateur par défaut
+              e.target.style.display = 'none';
+              e.target.nextSibling.style.display = 'block';
+            }}
+          />
+          <FaUser className="user-icon" style={{ display: 'none' }} />
         </div>
 
         {/* Titre */}

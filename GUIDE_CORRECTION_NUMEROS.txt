@@ -1,0 +1,123 @@
+═══════════════════════════════════════════════════════════════════
+  🔧 GUIDE DE CORRECTION DES NUMÉROS
+═══════════════════════════════════════════════════════════════════
+
+PROBLÈME IDENTIFIÉ
+────────────────────────────────────────────────────────────────────
+✅ Corrigé automatiquement !
+
+Vos numéros étaient désordonnés car :
+- L'ID de base était utilisé au lieu d'un compteur séquentiel
+- Suppressions créaient des trous
+- Formats incohérents (avec/sans année)
+
+
+SOLUTION MISE EN PLACE
+────────────────────────────────────────────────────────────────────
+✅ Standardisation complète : PREFIXE-ANNÉE-NNN
+
+Clients :     CLI-2025-001, CLI-2025-002, CLI-2025-003...
+Factures :    FAC-2025-001, FAC-2025-002, FAC-2025-003...
+Devis :       DEV-2025-001, DEV-2025-002, DEV-2025-003...
+Fournisseurs: FOUR-2025-001, FOUR-2025-002, FOUR-2025-003...
+Avoirs :      AVO-2025-001, AVO-2025-002, AVO-2025-003...
+Règlements :  REG-2025-001, REG-2025-002, REG-2025-003...
+
+
+═══════════════════════════════════════════════════════════════════
+  🚀 ÉTAPE 1 : CORRIGER LES NUMÉROS EXISTANTS
+═══════════════════════════════════════════════════════════════════
+
+Double-cliquer sur le fichier :
+  → CORRIGER_NUMEROS.bat
+
+Ce script va :
+  ✅ Corriger tous les numéros de clients
+  ✅ Corriger tous les numéros de factures
+  ✅ Corriger tous les numéros de devis
+  ✅ Mettre tous les numéros en ordre séquentiel
+
+⏱️  Temps d'exécution : 5-10 secondes
+
+
+═══════════════════════════════════════════════════════════════════
+  ✅ ÉTAPE 2 : REDÉMARRER LE BACKEND
+═══════════════════════════════════════════════════════════════════
+
+Après la correction, redémarrer le backend pour prendre en compte
+les modifications du code :
+
+  1. Arrêter le backend (Ctrl+C)
+  2. Relancer : LANCER_BACKEND.bat
+     OU
+     cd backend
+     python app.py
+
+
+═══════════════════════════════════════════════════════════════════
+  🎉 RÉSULTAT ATTENDU
+═══════════════════════════════════════════════════════════════════
+
+Après correction, vous verrez dans vos listes :
+
+Liste Clients :
+  ✅ CLI-2025-001
+  ✅ CLI-2025-002
+  ✅ CLI-2025-003
+  ✅ CLI-2025-004
+  ...
+
+Liste Factures :
+  ✅ FAC-2025-001
+  ✅ FAC-2025-002
+  ✅ FAC-2025-003
+  ✅ FAC-2025-004
+  ...
+
+Liste Devis :
+  ✅ DEV-2025-001
+  ✅ DEV-2025-002
+  ✅ DEV-2025-003
+  ✅ DEV-2025-004
+  ...
+
+
+═══════════════════════════════════════════════════════════════════
+  📋 FICHIERS MODIFIÉS
+═══════════════════════════════════════════════════════════════════
+
+✅ backend/app.py
+  - Ligne 436 : CLI-{year}-{next_num:03d}
+  - Ligne 901 : FAC-{year}-{next_num:03d}
+  - Ligne 1527: FAC-{year}-{next_num:03d}
+  - Ligne 2065: REG-{year}-{next_num:03d}
+
+✅ backend/corriger_numeros.py
+  - Tous les formats standardisés avec année
+
+✅ backend/database_mysql.py
+  - Ajout champ numero_reglement
+
+
+═══════════════════════════════════════════════════════════════════
+  ❓ QUE FAIRE SI ÇA NE FONCTIONNE PAS ?
+═══════════════════════════════════════════════════════════════════
+
+1. Vérifier que MySQL est démarré
+2. Vérifier les identifiants dans backend/config.env
+3. Vérifier que le backend est arrêté avant de lancer la correction
+4. Relancer CORRIGER_NUMEROS.bat après redémarrage
+
+
+═══════════════════════════════════════════════════════════════════
+  ✅ C'EST PRÊT !
+═══════════════════════════════════════════════════════════════════
+
+Double-cliquer sur CORRIGER_NUMEROS.bat maintenant !
+
+Après la correction, tous vos numéros seront en ordre séquentiel
+et les nouveaux éléments créés suivront automatiquement le bon format.
+
+🚀 Bonne correction !
+
+

@@ -50,11 +50,12 @@ function ClientForm({ client, onClose, onSuccess }) {
       if (client) {
         await clientService.update(client.id_client, formData);
         toast.success('Client modifié avec succès');
+        onSuccess(client);
       } else {
-        await clientService.create(formData);
+        const nouveauClient = await clientService.create(formData);
         toast.success('Client créé avec succès');
+        onSuccess(nouveauClient);
       }
-      onSuccess();
     } catch (error) {
       console.error('Erreur sauvegarde client:', error);
       toast.error('Erreur lors de la sauvegarde du client');

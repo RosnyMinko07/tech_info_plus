@@ -1,0 +1,66 @@
+# Contenu original de .dockerignore (DÉSACTIVÉ)
+# 🚫 Fichiers à ignorer lors du build Docker
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp
+.pnp.js
+
+# Tests
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+docs/
+
+# Base de données locale
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+
+# Environnement
+.env
+.env.local
+.env.*.local
+
+# Build
+build/
+dist/
+*.egg-info/

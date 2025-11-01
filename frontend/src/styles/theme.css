@@ -2,18 +2,18 @@
    TECH INFO PLUS - SYSTÈME DE THÈMES
    ======================================== */
 
-/* THÈME SOMBRE (par défaut) */
+/* THÈME SOMBRE (moderne et moins sombre) */
 :root,
 body[data-theme="dark"] {
-  /* Couleurs de fond */
-  --bg-principal: #1a1a1a;
-  --bg-secondaire: #2d2d2d;
-  --bg-tertiaire: #3a3a3a;
+  /* Couleurs de fond - Plus claires et modernes */
+  --bg-principal: #1e1e2e;
+  --bg-secondaire: #2a2a3e;
+  --bg-tertiaire: #363650;
   
-  /* Couleurs de texte */
-  --texte-principal: #ffffff;
-  --texte-secondaire: #b0b0b0;
-  --texte-tertiaire: #888888;
+  /* Couleurs de texte - Meilleur contraste */
+  --texte-principal: #e8e8f0;
+  --texte-secondaire: #c0c0d0;
+  --texte-tertiaire: #9090a0;
   
   /* Couleurs d'accent */
   --accent-bleu: #1f538d;
@@ -25,15 +25,15 @@ body[data-theme="dark"] {
   --accent-orange: #fd7e14;
   --accent-jaune: #ffc107;
   
-  /* Bordures et séparateurs */
-  --bordure: #444444;
+  /* Bordures et séparateurs - Plus visibles */
+  --bordure: #4a4a5e;
   --bordure-focus: #1f538d;
-  --separateur: #555555;
+  --separateur: #5a5a6e;
   
-  /* Hover et états */
-  --hover: #4a4a4a;
-  --active: #5a5a5a;
-  --disabled: #666666;
+  /* Hover et états - Plus doux */
+  --hover: #3e3e52;
+  --active: #4a4a60;
+  --disabled: #6a6a7e;
   
   /* Ombres */
   --ombre-petite: 0 2px 4px rgba(0, 0, 0, 0.3);
@@ -216,7 +216,7 @@ code {
 .card-title {
   font-size: var(--titre-section);
   font-weight: 600;
-  color: var(--accent-bleu);
+  color: var(--texte-principal);
   margin-bottom: 15px;
 }
 
@@ -425,7 +425,7 @@ code {
 
 .modal-title {
   font-size: var(--titre-secondaire);
-  color: var(--accent-bleu);
+  color: var(--texte-principal);
   font-weight: 600;
 }
 
@@ -474,4 +474,34 @@ code {
     padding: 8px 16px;
     font-size: 13px;
   }
+}
+
+/* Recharts – rendre les textes/axes lisibles quel que soit le thème */
+.recharts-wrapper text,
+.recharts-text,
+.recharts-cartesian-axis-tick text,
+.recharts-cartesian-axis-tick tspan,
+.recharts-label tspan {
+  fill: var(--texte-principal) !important;
+}
+
+.recharts-cartesian-axis-line,
+.recharts-cartesian-axis-tick line {
+  stroke: var(--texte-principal) !important;
+}
+
+.recharts-cartesian-grid line {
+  stroke: var(--separateur) !important;
+}
+
+.recharts-default-tooltip,
+.recharts-tooltip-wrapper {
+  background: var(--bg-secondaire) !important;
+  border: 1px solid var(--bordure) !important;
+  color: var(--texte-principal) !important;
+}
+
+.recharts-tooltip-item,
+.recharts-tooltip-label {
+  color: var(--texte-principal) !important;
 }

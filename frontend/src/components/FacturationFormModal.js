@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { factureService, clientService, articleService, formatMontant } from '../services/api';
+import api from '../services/api';
 import '../styles/Modal.css';
 
-function FacturationFormModal({ facture, onClose, onSuccess }) {
+function FacturationFormModal({ facture, devis, onClose, onSuccess }) {
     const [formData, setFormData] = useState({
         numero_facture: '',
         date_facture: new Date().toISOString().split('T')[0],
@@ -50,11 +51,32 @@ function FacturationFormModal({ facture, onClose, onSuccess }) {
             
             // Charger les articles séparément (comme Python ligne 1958)
             loadLignesFacture(facture.id_facture);
+        } else if (devis) {
+            // Mode création à partir d'un devis
+            setFormData({
+                numero_facture: '',
+                date_facture: new Date().toISOString().split('T')[0],
+                id_client: devis.id_client || '',
+                statut: 'En attente',
+                montant_ht: parseFloat(devis.montant_ht || 0),
+                montant_ttc: parseFloat(devis.montant_ttc || 0),
+                montant_avance: 0,
+                montant_reste: parseFloat(devis.montant_ttc || 0),
+                description: devis.description || devis.titre || `FACTURE ISSUE DU DEVIS ${devis.numero_devis}`,
+                precompte_actif: devis.precompte_applique === 1,
+                type_facture: 'NORMALE'
+            });
+            
+            // Charger les lignes du devis
+            loadLignesDevis(devis.id_devis);
+            
+            // Générer le numéro de facture
+            generateNumeroFacture();
         } else {
             // Mode création : générer le numéro
             generateNumeroFacture();
         }
-    }, [facture]);
+    }, [facture, devis]);
     
     const loadLignesFacture = async (id_facture) => {
         try {
@@ -73,6 +95,28 @@ function FacturationFormModal({ facture, onClose, onSuccess }) {
         } catch (error) {
             console.error('Erreur chargement lignes facture:', error);
             toast.error('Erreur lors du chargement des articles de la facture');
+        }
+    };
+
+    const loadLignesDevis = async (id_devis) => {
+        try {
+            // Charger les lignes du devis
+            const response = await api.get(`/api/devis/${id_devis}/lignes`);
+            const lignes = response.data;
+            
+            if (lignes && lignes.length > 0) {
+                setLignesFacture(lignes.map(ligne => ({
+                    id_article: ligne.id_article,
+                    designation: ligne.designation,
+                    quantite: ligne.quantite,
+                    prix_unitaire: parseFloat(ligne.prix_unitaire || 0),
+                    montant_ht: parseFloat(ligne.montant_ht || 0),
+                    type_article: ligne.type_article || 'PRODUIT'
+                })));
+            }
+        } catch (error) {
+            console.error('Erreur chargement lignes devis:', error);
+            toast.error('Erreur lors du chargement des articles du devis');
         }
     };
 

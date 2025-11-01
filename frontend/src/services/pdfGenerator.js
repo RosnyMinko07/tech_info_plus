@@ -6,6 +6,27 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+// Évite les décalages de fuseau: si la date est au format YYYY-MM-DD (sans heure),
+// on utilise directement cette valeur au lieu de construire un objet Date qui peut décaler le jour.
+const toFrenchDate = (input) => {
+    if (!input) return new Date().toLocaleDateString('fr-FR');
+    if (typeof input === 'string') {
+        const m = input.match(/^\d{4}-\d{2}-\d{2}/);
+        if (m) {
+            const [y, mo, d] = m[0].split('-').map(Number);
+            // Formater manuellement en JJ/MM/AAAA
+            const dd = String(d).padStart(2, '0');
+            const mm = String(mo).padStart(2, '0');
+            return `${dd}/${mm}/${y}`;
+        }
+    }
+    try {
+        return new Date(input).toLocaleDateString('fr-FR');
+    } catch (_) {
+        return new Date().toLocaleDateString('fr-FR');
+    }
+};
+
 /**
  * Formate un montant en FCFA (AVEC devise pour le tableau)
  * Comme Python ligne 109-113
@@ -164,9 +185,7 @@ export const generateFacturePDF = async (facture, lignes, client, entreprise) =>
         // ========== 3. DATE (comme Python ligne 247-249) ==========
         doc.setFontSize(10);
         doc.setTextColor(0, 0, 0);
-        const dateStr = facture.date_facture 
-            ? new Date(facture.date_facture).toLocaleDateString('fr-FR')
-            : new Date().toLocaleDateString('fr-FR');
+        const dateStr = toFrenchDate(facture.date_facture);
         // Extraire la ville depuis l'adresse (premier mot avant la virgule)
         const ville = entreprise.adresse ? entreprise.adresse.split(',')[0].trim() : 'Douala';
         doc.text(`${ville}, le ${dateStr}`, pageWidth - margin, currentY, { align: 'right' });
@@ -278,20 +297,33 @@ export const generateFacturePDF = async (facture, lignes, client, entreprise) =>
         currentY = doc.lastAutoTable.finalY + 12;
 
         // ========== 7. TOTAUX (comme Python ligne 389-455) ==========
-        // Utiliser les totaux de la facture directement (pas recalculer depuis lignes)
+        // Recalculer les totaux en analysant les lignes pour le précompte correct
         const totalHT = facture.total_ht || facture.montant_ht || 0;
-        const totalTTC = facture.total_ttc || facture.montant_ttc || 0;
-        const precompte = totalHT - totalTTC;
+        let totalPrecompte = 0;
+        let totalTTC = totalHT;
+        
+        // Si précompte activé, recalculer en analysant les lignes
+        if (facture.precompte_applique && lignes && lignes.length > 0) {
+            // Calculer le précompte uniquement sur les SERVICES
+            lignes.forEach(ligne => {
+                if (ligne.type_article === 'SERVICE') {
+                    const montantService = ligne.quantite * ligne.prix_unitaire;
+                    totalPrecompte += montantService * 0.095; // 9.5%
+                }
+            });
+            totalTTC = totalHT - totalPrecompte;
+        }
+        
         const montantPaye = facture.montant_avance || 0;
         const resteAPayer = Math.max(0, totalTTC - montantPaye);
 
-        // Déterminer si on affiche le précompte (comme Python ligne 417-440)
-        const applyPrecompte = precompte > 0;
+        // Déterminer si on affiche le précompte
+        const applyPrecompte = totalPrecompte > 0;
         const totauxData = [];
 
         if (applyPrecompte) {
             totauxData.push(['Total HT', formatCurrencyFull(totalHT)]);
-            totauxData.push(['Précompte 9.5%', formatCurrencyFull(precompte)]);
+            totauxData.push(['Précompte 9.5%', formatCurrencyFull(totalPrecompte)]);
             totauxData.push(['Net à payer', formatCurrencyFull(totalTTC)]);
             totauxData.push(['Montant payé', formatCurrencyFull(montantPaye)]);
             if (resteAPayer > 0) {
@@ -463,9 +495,7 @@ export const generateDevisPDF = async (devis, lignes, client, entreprise) => {
         // ========== 3. DATE ==========
         doc.setFontSize(10);
         doc.setTextColor(0, 0, 0);
-        const dateStr = devis.date_devis 
-            ? new Date(devis.date_devis).toLocaleDateString('fr-FR')
-            : new Date().toLocaleDateString('fr-FR');
+        const dateStr = toFrenchDate(devis.date_devis);
         const ville = entreprise.adresse ? entreprise.adresse.split(',')[0].trim() : 'Douala';
         doc.text(`${ville}, le ${dateStr}`, pageWidth - margin, currentY, { align: 'right' });
         currentY += 8;
@@ -574,15 +604,28 @@ export const generateDevisPDF = async (devis, lignes, client, entreprise) => {
         currentY = doc.lastAutoTable.finalY + 12;
 
         // ========== 7. TOTAUX (comme Python ligne 388-423) ==========
-        // Utiliser les totaux du devis directement (pas recalculer depuis lignes)
+        // Recalculer les totaux en analysant les lignes pour le précompte correct
         const totalHT = devis.total_ht || devis.montant_ht || 0;
+        let totalPrecompte = 0;
+        let netAPayer = totalHT;
+        
+        // Si précompte activé, recalculer en analysant les lignes
+        if (devis.precompte_applique && lignes && lignes.length > 0) {
+            // Calculer le précompte uniquement sur les SERVICES
+            lignes.forEach(ligne => {
+                if (ligne.type_article === 'SERVICE') {
+                    const montantService = ligne.quantite * ligne.prix_unitaire;
+                    totalPrecompte += montantService * 0.095; // 9.5%
+                }
+            });
+            netAPayer = totalHT - totalPrecompte;
+        }
+        
         const precomptePercent = devis.precompte_applique ? 9.5 : 0;
-        const precompte = Math.round(totalHT * (precomptePercent / 100.0));
-        const netAPayer = Math.round(totalHT - precompte);
 
         const totauxData = [
             ['Total', formatCurrencyFull(totalHT)],
-            [precomptePercent > 0 ? `Précompte ${precomptePercent}%` : 'Précompte', formatCurrencyFull(precompte)],
+            [precomptePercent > 0 ? `Précompte ${precomptePercent}%` : 'Précompte', formatCurrencyFull(totalPrecompte)],
             ['Net à payer', formatCurrencyFull(netAPayer)]
         ];
 
@@ -650,6 +693,227 @@ export const generateDevisPDF = async (devis, lignes, client, entreprise) => {
         
     } catch (error) {
         console.error('❌ Erreur génération PDF devis:', error);
+        throw error;
+    }
+};
+
+/**
+ * Générer un PDF pour un avoir (note de crédit)
+ */
+export const generateAvoirPDF = async (avoir, lignes, client, facture, entreprise) => {
+    try {
+        const doc = new jsPDF();
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 15;
+        let currentY = margin;
+
+        // ========== 1. EN-TÊTE AVEC LOGO ==========
+        if (entreprise?.logo) {
+            try {
+                doc.addImage(entreprise.logo, 'JPEG', margin, currentY, 40, 20);
+            } catch (e) {
+                console.warn('Logo non chargé');
+            }
+        }
+
+        // Informations entreprise (à droite)
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(31, 83, 141);
+        doc.text(entreprise?.nom || 'TECH INFO PLUS', pageWidth - margin, currentY, { align: 'right' });
+        
+        currentY += 5;
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
+        doc.text(entreprise?.adresse || '', pageWidth - margin, currentY, { align: 'right' });
+        currentY += 4;
+        doc.text(`Tél: ${entreprise?.telephone || ''}`, pageWidth - margin, currentY, { align: 'right' });
+        currentY += 4;
+        doc.text(`Email: ${entreprise?.email || ''}`, pageWidth - margin, currentY, { align: 'right' });
+        
+        currentY = 45;
+
+        // ========== 2. TITRE "AVOIR - REMBOURSEMENT" ==========
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(220, 53, 69); // Rouge pour avoir
+        doc.text('AVOIR - REMBOURSEMENT', pageWidth / 2, currentY, { align: 'center' });
+        
+        currentY += 8;
+        doc.setFontSize(11);
+        doc.setTextColor(0, 0, 0);
+        doc.text(`N° ${avoir.numero_avoir}`, pageWidth / 2, currentY, { align: 'center' });
+        
+        currentY += 12;
+
+        // ========== 3. INFORMATIONS CLIENT ET AVOIR ==========
+        const infoY = currentY;
+        
+        // Client (gauche)
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text('CLIENT:', margin, currentY);
+        currentY += 5;
+        doc.setFont('helvetica', 'normal');
+        doc.text(client?.nom || 'N/A', margin, currentY);
+        currentY += 4;
+        if (client?.adresse) doc.text(client.adresse, margin, currentY);
+        currentY += 4;
+        if (client?.telephone) doc.text(`Tél: ${client.telephone}`, margin, currentY);
+        currentY += 4;
+        if (client?.nif) doc.text(`NIF: ${client.nif}`, margin, currentY);
+
+        // Informations avoir (droite)
+        currentY = infoY;
+        doc.setFont('helvetica', 'bold');
+        doc.text('INFORMATIONS:', pageWidth - margin - 60, currentY);
+        currentY += 5;
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Date: ${avoir.date_avoir || new Date().toLocaleDateString('fr-FR')}`, pageWidth - margin - 60, currentY);
+        currentY += 4;
+        doc.text(`Facture: ${facture?.numero_facture || 'N/A'}`, pageWidth - margin - 60, currentY);
+        currentY += 4;
+        doc.text(`Statut: ${avoir.statut || 'EN_ATTENTE'}`, pageWidth - margin - 60, currentY);
+
+        currentY = Math.max(currentY, infoY + 25) + 10;
+
+        // ========== 4. MOTIF DE L'AVOIR ==========
+        if (avoir.motif) {
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'bold');
+            doc.text('MOTIF:', margin, currentY);
+            currentY += 5;
+            doc.setFont('helvetica', 'normal');
+            const motifLines = doc.splitTextToSize(avoir.motif, pageWidth - 2 * margin);
+            motifLines.forEach(line => {
+                doc.text(line, margin, currentY);
+                currentY += 4;
+            });
+            currentY += 5;
+        }
+
+        // ========== 5. TABLEAU DES ARTICLES ==========
+        const tableData = lignes.map(ligne => [
+            ligne.code_article || ligne.article?.code_article || '',
+            ligne.designation || ligne.article?.designation || 'Article',
+            ligne.quantite?.toString() || '0',
+            formatCurrency(ligne.prix_unitaire || 0, ''),
+            formatCurrency(ligne.montant_ht || ligne.montant_total || (ligne.quantite * ligne.prix_unitaire) || 0, '')
+        ]);
+
+        autoTable(doc, {
+            startY: currentY,
+            head: [['Code', 'Désignation', 'Qté', 'Prix Unitaire', 'Montant']],
+            body: tableData,
+            theme: 'grid',
+            headStyles: {
+                fillColor: [220, 53, 69], // Rouge pour avoir
+                textColor: 255,
+                fontSize: 9,
+                fontStyle: 'bold',
+                halign: 'center'
+            },
+            columnStyles: {
+                0: { cellWidth: 25, halign: 'center' },
+                1: { cellWidth: 70, halign: 'left' },
+                2: { cellWidth: 20, halign: 'center' },
+                3: { cellWidth: 30, halign: 'right' },
+                4: { cellWidth: 35, halign: 'right' }
+            },
+            styles: {
+                fontSize: 9,
+                cellPadding: 4
+            },
+            margin: { left: margin, right: margin }
+        });
+
+        currentY = doc.lastAutoTable.finalY + 10;
+
+        // ========== 6. TOTAUX (SANS PRÉCOMPTE - C'EST UN REMBOURSEMENT) ==========
+        const totalTableWidth = 80;
+        
+        // Calculer le total depuis les lignes (PAS DE TVA, PAS DE PRÉCOMPTE)
+        const totalRemboursement = lignes.reduce((sum, ligne) => {
+            const montant = ligne.montant_ht || ligne.montant_total || (ligne.quantite * ligne.prix_unitaire) || 0;
+            return sum + parseFloat(montant);
+        }, 0);
+        
+        const totaux = [
+            ['MONTANT À REMBOURSER', formatCurrency(totalRemboursement)]
+        ];
+
+        autoTable(doc, {
+            startY: currentY,
+            body: totaux,
+            theme: 'plain',
+            columnStyles: {
+                0: { 
+                    cellWidth: 35,
+                    fontStyle: 'bold',
+                    halign: 'right'
+                },
+                1: { 
+                    cellWidth: 45,
+                    fontStyle: 'bold',
+                    halign: 'right',
+                    fillColor: [255, 240, 240] // Fond rouge clair
+                }
+            },
+            styles: {
+                fontSize: 9,
+                cellPadding: 2
+            },
+            margin: { left: pageWidth - margin - totalTableWidth }
+        });
+
+        currentY = doc.lastAutoTable.finalY + 10;
+
+        // ========== 7. MONTANT EN LETTRES ==========
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        const montantEnLettres = numberToFrench(Math.round(totalRemboursement));
+        const phrase = `Montant à rembourser : ${montantEnLettres} francs CFA`;
+        const splitAmount = doc.splitTextToSize(phrase, pageWidth - 2 * margin);
+        splitAmount.forEach(line => {
+            doc.text(line, pageWidth / 2, currentY, { align: 'center' });
+            currentY += 5;
+        });
+
+        currentY += 10;
+
+        // ========== 8. NOTE IMPORTANTE ==========
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(220, 53, 69);
+        const noteText = 'NOTE IMPORTANTE : Ce document constitue un avoir sur la facture mentionnée ci-dessus.';
+        const noteLines = doc.splitTextToSize(noteText, pageWidth - 2 * margin);
+        noteLines.forEach(line => {
+            doc.text(line, pageWidth / 2, currentY, { align: 'center' });
+            currentY += 5;
+        });
+        
+        currentY += 5;
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 100, 100);
+        doc.text('Le montant sera remboursé ou déduit de vos prochaines factures.', pageWidth / 2, currentY, { align: 'center' });
+
+        // ========== 9. PIED DE PAGE ==========
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(128, 128, 128);
+        doc.text('Merci de votre confiance', pageWidth / 2, pageHeight - 10, { align: 'center' });
+
+        // Ouvrir le PDF
+        const pdfBlob = doc.output('blob');
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        window.open(pdfUrl, '_blank');
+        
+    } catch (error) {
+        console.error('❌ Erreur génération PDF avoir:', error);
         throw error;
     }
 };

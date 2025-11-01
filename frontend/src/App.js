@@ -19,7 +19,7 @@ import Comptoir from './pages/Comptoir';
 import Stock from './pages/Stock';
 import Inventaire from './pages/Inventaire';
 import Reglements from './pages/Reglements';
-import Avoirs from './pages/Avoirs';
+// import Avoirs from './pages/Avoirs'; // 🔒 Module désactivé
 import Utilisateurs from './pages/Utilisateurs';
 import Rapports from './pages/Rapports';
 import Configuration from './pages/Configuration';
@@ -98,7 +98,9 @@ function App() {
             hideProgressBar={false}
             closeOnClick
             pauseOnHover
-            theme="dark"
+            draggable
+            theme="colored"
+            style={{ zIndex: 9999 }}
           />
           
           <Routes>
@@ -128,7 +130,7 @@ function App() {
               <Route path="stock" element={<Stock />} />
               <Route path="inventaire" element={<Inventaire />} />
               <Route path="reglements" element={<Reglements />} />
-              <Route path="avoirs" element={<Avoirs />} />
+              {/* <Route path="avoirs" element={<Avoirs />} /> */} {/* 🔒 Module désactivé */}
               <Route path="utilisateurs" element={<Utilisateurs />} />
               <Route path="rapports" element={<Rapports />} />
               <Route path="configuration" element={<Configuration />} />

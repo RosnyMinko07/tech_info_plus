@@ -1,0 +1,28 @@
+# Dockerfile pour le backend FastAPI (DÉSACTIVÉ)
+FROM python:3.11-slim
+
+# Définir le répertoire de travail
+WORKDIR /app
+
+# Installer les dépendances système nécessaires
+RUN apt-get update && apt-get install -y \
+    gcc \
+    default-libmysqlclient-dev \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copier le fichier requirements
+COPY requirements.txt .
+
+# Installer les dépendances Python
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir fastapi uvicorn[standard] sqlalchemy pymysql python-dotenv passlib==1.7.4 bcrypt==4.0.1 python-multipart cryptography
+
+# Copier tout le code du backend
+COPY . .
+
+# Exposer le port 8000
+EXPOSE 8000
+
+# Commande pour démarrer l'application
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

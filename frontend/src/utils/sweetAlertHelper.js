@@ -28,6 +28,47 @@ export const confirmDelete = async (itemName = 'cet élément') => {
 };
 
 /**
+ * Popup de confirmation spécialisé pour suppression de clients avec documents
+ * @param {string} clientName - Nom du client
+ * @param {number} nbFactures - Nombre de factures
+ * @param {number} nbDevis - Nombre de devis
+ * @returns {Promise<boolean>} - true si confirmé, false sinon
+ */
+export const confirmDeleteClientWithDocuments = async (clientName, nbFactures, nbDevis) => {
+  const result = await Swal.fire({
+    title: '⚠️ Suppression avec documents',
+    html: `
+      <div style="text-align: left;">
+        <p>Le client <strong>"${clientName}"</strong> a des documents liés :</p>
+        <ul style="margin: 10px 0; padding-left: 20px;">
+          <li>📄 ${nbFactures} facture(s)</li>
+          <li>📋 ${nbDevis} devis</li>
+        </ul>
+        <p style="color: #dc3545; font-weight: bold;">
+          ⚠️ La suppression supprimera AUSSI tous ces documents !
+        </p>
+        <small style="color: #666;">Cette action est irréversible.</small>
+      </div>
+    `,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc3545',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: '<i class="fas fa-trash"></i> Supprimer tout',
+    cancelButtonText: '<i class="fas fa-times"></i> Annuler',
+    background: 'var(--bg-secondaire)',
+    color: 'var(--texte-principal)',
+    customClass: {
+      popup: 'swal-popup-custom',
+      confirmButton: 'swal-btn-confirm',
+      cancelButton: 'swal-btn-cancel'
+    }
+  });
+  
+  return result.isConfirmed;
+};
+
+/**
  * Popup de confirmation pour déconnexion
  * @returns {Promise<boolean>} - true si confirmé, false sinon
  */
@@ -218,6 +259,44 @@ export const showError = (message) => {
     title: 'Erreur',
     text: message,
     confirmButtonColor: '#dc3545',
+    background: 'var(--bg-secondaire)',
+    color: 'var(--texte-principal)',
+    customClass: {
+      popup: 'swal-popup-custom'
+    }
+  });
+};
+
+/**
+ * Popup d'information
+ * @param {string} title - Titre
+ * @param {string} message - Message
+ */
+export const showInfo = (title, message) => {
+  Swal.fire({
+    icon: 'info',
+    title,
+    html: message,
+    confirmButtonColor: '#1f538d',
+    background: 'var(--bg-secondaire)',
+    color: 'var(--texte-principal)',
+    customClass: {
+      popup: 'swal-popup-custom'
+    }
+  });
+};
+
+/**
+ * Popup de succès avec détails (pour ventes, etc.)
+ * @param {string} title - Titre
+ * @param {string} details - Détails HTML
+ */
+export const showSuccessWithDetails = (title, details) => {
+  Swal.fire({
+    icon: 'success',
+    title,
+    html: details,
+    confirmButtonColor: '#28a745',
     background: 'var(--bg-secondaire)',
     color: 'var(--texte-principal)',
     customClass: {

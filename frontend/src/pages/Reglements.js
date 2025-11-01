@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaSearch, FaSync, FaEdit, FaTrash, FaFileExport, FaMoneyBillWave } from 'react-icons/fa';
+import { FaPlus, FaSearch, FaSync, FaEdit, FaTrash, FaFileExport, FaMoneyBillWave, FaEye } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { reglementService, factureService, formatMontant, formatDate } from '../services/api';
 import { confirmDelete } from '../utils/sweetAlertHelper';
@@ -11,6 +11,8 @@ function Reglements() {
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
+    const [showDetails, setShowDetails] = useState(false);
+    const [reglementDetails, setReglementDetails] = useState(null);
     
     // Statistiques
     const [stats, setStats] = useState({
@@ -131,6 +133,17 @@ function Reglements() {
             loadData();
         } catch (error) {
             toast.error('❌ Erreur lors de la suppression');
+        }
+    };
+
+    const handleViewDetails = async (reglement) => {
+        try {
+            const details = await reglementService.getById(reglement.id_reglement);
+            setReglementDetails(details);
+            setShowDetails(true);
+        } catch (error) {
+            console.error('Erreur chargement détails:', error);
+            toast.error('❌ Erreur lors du chargement des détails');
         }
     };
 
@@ -304,6 +317,14 @@ function Reglements() {
                                             <div className="action-buttons-group">
                                                 <button
                                                     className="btn-icon"
+                                                    onClick={() => handleViewDetails(reglement)}
+                                                    title="Voir les détails"
+                                                    style={{ backgroundColor: '#3B82F6', color: 'white' }}
+                                                >
+                                                    <FaEye />
+                                                </button>
+                                                <button
+                                                    className="btn-icon"
                                                     onClick={() => handleDelete(reglement)}
                                                     title="Supprimer"
                                                     style={{ backgroundColor: '#EF4444', color: 'white' }}
@@ -418,6 +439,104 @@ function Reglements() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Détails Règlement */}
+            {showDetails && reglementDetails && (
+                <div className="modal-overlay" onClick={() => setShowDetails(false)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{maxWidth: '700px'}}>
+                        <div className="modal-header">
+                            <h2>💰 Détails du Règlement</h2>
+                            <button className="btn-close" onClick={() => setShowDetails(false)}>✕</button>
+                        </div>
+
+                        <div className="modal-body">
+                            <div className="client-details">
+                                <div className="details-section">
+                                    <h3>💵 Informations du Règlement</h3>
+                                    <div className="details-grid">
+                                        <div className="detail-item">
+                                            <label>Montant:</label>
+                                            <span style={{ color: '#28a745', fontWeight: 'bold', fontSize: '18px' }}>
+                                                {formatMontant(reglementDetails.montant)}
+                                            </span>
+                                        </div>
+                                        <div className="detail-item">
+                                            <label>Mode de paiement:</label>
+                                            <span>{reglementDetails.mode_paiement}</span>
+                                        </div>
+                                        <div className="detail-item">
+                                            <label>Date du règlement:</label>
+                                            <span>{formatDate(reglementDetails.date_reglement)}</span>
+                                        </div>
+                                        <div className="detail-item">
+                                            <label>Référence:</label>
+                                            <span>{reglementDetails.reference || 'Non renseignée'}</span>
+                                        </div>
+                                        <div className="detail-item">
+                                            <label>Date de création:</label>
+                                            <span>{formatDate(reglementDetails.created_at)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {reglementDetails.facture && (
+                                    <div className="details-section">
+                                        <h3>📄 Informations de la Facture</h3>
+                                        <div className="details-grid">
+                                            <div className="detail-item">
+                                                <label>Numéro facture:</label>
+                                                <span>{reglementDetails.facture.numero_facture}</span>
+                                            </div>
+                                            <div className="detail-item">
+                                                <label>Date facture:</label>
+                                                <span>{formatDate(reglementDetails.facture.date_facture)}</span>
+                                            </div>
+                                            <div className="detail-item">
+                                                <label>Montant HT:</label>
+                                                <span>{formatMontant(reglementDetails.facture.montant_ht)}</span>
+                                            </div>
+                                            <div className="detail-item">
+                                                <label>Montant TTC:</label>
+                                                <span>{formatMontant(reglementDetails.facture.montant_ttc)}</span>
+                                            </div>
+                                            <div className="detail-item">
+                                                <label>Statut:</label>
+                                                <span>{reglementDetails.facture.statut}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {reglementDetails.client && (
+                                    <div className="details-section">
+                                        <h3>👤 Informations du Client</h3>
+                                        <div className="details-grid">
+                                            <div className="detail-item">
+                                                <label>Nom:</label>
+                                                <span>{reglementDetails.client.nom}</span>
+                                            </div>
+                                            <div className="detail-item">
+                                                <label>Téléphone:</label>
+                                                <span>{reglementDetails.client.telephone || 'Non renseigné'}</span>
+                                            </div>
+                                            <div className="detail-item">
+                                                <label>Email:</label>
+                                                <span>{reglementDetails.client.email || 'Non renseigné'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="modal-footer">
+                            <button className="btn-primary" onClick={() => setShowDetails(false)}>
+                                Fermer
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { FaBug, FaPlus, FaSync, FaEdit, FaTrash, FaTimes, FaCheck, FaLock, FaTools } from 'react-icons/fa';
-import axios from 'axios';
+import api from '../services/api';
 import '../styles/Bugs.css';
 import { confirmDelete, confirmAction } from '../utils/sweetAlertHelper';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+// Utiliser l'instance API (URL dynamique)
 
 function Bugs() {
   const [bugs, setBugs] = useState([]);
@@ -40,10 +40,7 @@ function Bugs() {
   const loadBugs = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/bugs`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/api/bugs');
       setBugs(response.data);
     } catch (error) {
       console.error('Erreur chargement bugs:', error);
@@ -55,10 +52,7 @@ function Bugs() {
 
   const loadStats = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/bugs/stats`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/api/bugs/stats');
       setStats(response.data);
     } catch (error) {
       console.error('Erreur chargement stats:', error);
@@ -100,23 +94,13 @@ function Bugs() {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      
       if (editingBug) {
         // Modification
-        await axios.put(
-          `${API_URL}/api/bugs/${editingBug.id_signalement}`,
-          formData,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        await api.put(`/api/bugs/${editingBug.id_signalement}`, formData);
         toast.success('Bug modifié avec succès');
       } else {
         // Création
-        await axios.post(
-          `${API_URL}/api/bugs`,
-          formData,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        await api.post('/api/bugs', formData);
         toast.success('Bug créé avec succès');
       }
 
@@ -134,10 +118,7 @@ function Bugs() {
     if (!confirmed) return;
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`${API_URL}/api/bugs/${bugId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.delete(`/api/bugs/${bugId}`);
       toast.success('✅ Bug supprimé avec succès');
       loadBugs();
       loadStats();
@@ -150,12 +131,7 @@ function Bugs() {
   // 🔧 Marquer comme EN_COURS
   const handleMarquerEnCours = async (bug) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.put(
-        `${API_URL}/api/bugs/${bug.id_signalement}`,
-        { ...bug, statut: 'EN_COURS' },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await api.put(`/api/bugs/${bug.id_signalement}`, { ...bug, statut: 'EN_COURS' });
       toast.success('Bug marqué comme "En cours"');
       loadBugs();
       loadStats();
@@ -176,12 +152,7 @@ function Bugs() {
     if (!confirmed) return;
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.put(
-        `${API_URL}/api/bugs/${bug.id_signalement}`,
-        { ...bug, statut: 'RESOLU', date_resolution: new Date().toISOString() },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await api.put(`/api/bugs/${bug.id_signalement}`, { ...bug, statut: 'RESOLU', date_resolution: new Date().toISOString() });
       toast.success('✅ Bug résolu avec succès !');
       loadBugs();
       loadStats();
@@ -202,12 +173,7 @@ function Bugs() {
     if (!confirmed) return;
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.put(
-        `${API_URL}/api/bugs/${bug.id_signalement}`,
-        { ...bug, statut: 'FERME' },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await api.put(`/api/bugs/${bug.id_signalement}`, { ...bug, statut: 'FERME' });
       toast.success('🔒 Bug fermé');
       loadBugs();
       loadStats();

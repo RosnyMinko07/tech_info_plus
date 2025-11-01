@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaPlus, FaSearch, FaSync, FaEdit, FaTrash, FaCheck, FaTimes, FaPrint, FaFilePdf } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { avoirService, clientService, factureService, formatMontant, formatDate, downloadPDF } from '../services/api';
+import { generateAvoirPDF } from '../services/pdfGenerator';
 import AvoirFormModal from '../components/AvoirFormModal';
 import { confirmDelete, confirmAction } from '../utils/sweetAlertHelper';
 import '../styles/Avoirs.css';
@@ -155,9 +156,37 @@ function Avoirs() {
     const handleGeneratePDF = async (avoir) => {
         try {
             toast.info('Génération du PDF en cours...');
-            await downloadPDF(`/api/pdf/avoir/${avoir.id_avoir}`, `avoir_${avoir.numero_avoir}.pdf`);
+            
+            // Récupérer les détails complets de l'avoir
+            const response = await avoirService.getById(avoir.id_avoir);
+            const avoirComplet = response.data;
+            
+            // Récupérer le client
+            const clientResponse = await clientService.getById(avoirComplet.id_facture ? avoirComplet.facture?.id_client : null);
+            const client = clientResponse?.data;
+            
+            // Récupérer la facture
+            const factureResponse = avoirComplet.id_facture ? await factureService.getById(avoirComplet.id_facture) : null;
+            const facture = factureResponse?.data;
+            
+            // Récupérer les lignes
+            const lignes = avoirComplet.lignes || [];
+            
+            // Récupérer les infos entreprise (depuis la config ou valeurs par défaut)
+            const entreprise = {
+                nom: 'TECH INFO PLUS',
+                adresse: 'Votre adresse',
+                telephone: 'Votre téléphone',
+                email: 'votre@email.com',
+                logo: null // Ajouter le logo si disponible
+            };
+            
+            // Générer le PDF
+            await generateAvoirPDF(avoirComplet, lignes, client, facture, entreprise);
+            
             toast.success('PDF généré avec succès');
         } catch (error) {
+            console.error('Erreur génération PDF avoir:', error);
             toast.error('Erreur lors de la génération du PDF');
         }
     };

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Facturation.css';
+import { confirmDelete, showError, showSuccess } from '../utils/sweetAlertHelper';
 
 const Fournisseurs = () => {
   const [fournisseurs, setFournisseurs] = useState([]);
@@ -75,7 +76,7 @@ const Fournisseurs = () => {
 
   const enregistrerFournisseur = async () => {
     if (!formData.nom_fournisseur) {
-      alert('Le nom du fournisseur est obligatoire');
+      showError('Le nom du fournisseur est obligatoire');
       return;
     }
 
@@ -88,37 +89,38 @@ const Fournisseurs = () => {
           formData,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        alert('Fournisseur modifié avec succès');
+        showSuccess('Fournisseur modifié avec succès');
       } else {
         await axios.post(
           'http://localhost:8000/api/fournisseurs',
           formData,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        alert('Fournisseur créé avec succès');
+        showSuccess('Fournisseur créé avec succès');
       }
 
       fermerFormulaire();
       chargerFournisseurs();
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de l\'enregistrement');
+      showError('Erreur lors de l\'enregistrement');
     }
   };
 
   const supprimerFournisseur = async (idFournisseur) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce fournisseur ?')) return;
+    const confirmed = await confirmDelete('ce fournisseur');
+    if (!confirmed) return;
 
     try {
       const token = localStorage.getItem('token');
       await axios.delete(`http://localhost:8000/api/fournisseurs/${idFournisseur}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      alert('Fournisseur supprimé');
+      showSuccess('Fournisseur supprimé');
       chargerFournisseurs();
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de la suppression');
+      showError('Erreur lors de la suppression');
     }
   };
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import './Facturation.css';
+import { showError, showSuccess } from '../utils/sweetAlertHelper';
 
 const Reglements = () => {
   const [reglements, setReglements] = useState([]);
@@ -33,10 +34,7 @@ const Reglements = () => {
   const chargerReglements = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:8000/api/reglements', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/api/reglements');
       setReglements(response.data);
       calculerStatistiques(response.data);
     } catch (error) {
@@ -48,10 +46,7 @@ const Reglements = () => {
 
   const chargerFactures = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:8000/api/factures', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/api/factures');
       // Filtrer les factures non payées
       setFactures(response.data.filter(f => f.statut !== 'Payée'));
     } catch (error) {
@@ -88,24 +83,19 @@ const Reglements = () => {
 
   const enregistrerReglement = async () => {
     if (!formData.id_facture || !formData.montant) {
-      alert('Veuillez remplir tous les champs obligatoires');
+      showError('Veuillez remplir tous les champs obligatoires');
       return;
     }
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.post(
-        'http://localhost:8000/api/reglements',
-        { ...formData, montant: parseFloat(formData.montant) },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      alert('Règlement enregistré avec succès');
+      await api.post('/api/reglements', { ...formData, montant: parseFloat(formData.montant) });
+      showSuccess('Règlement enregistré avec succès');
       fermerFormulaire();
       chargerReglements();
       chargerFactures();
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de l\'enregistrement');
+      showError('Erreur lors de l\'enregistrement');
     }
   };
 

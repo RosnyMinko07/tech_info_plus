@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { devisService, clientService, articleService, formatMontant } from '../services/api';
+import ClientForm from './ClientForm';
 import '../styles/Modal.css';
 
 function DevisFormModal({ devis, onClose, onSuccess }) {
@@ -18,6 +19,9 @@ function DevisFormModal({ devis, onClose, onSuccess }) {
     const [selectedArticle, setSelectedArticle] = useState('');
     const [quantite, setQuantite] = useState(1);
     const [lignesDevis, setLignesDevis] = useState([]);
+    
+    // Modal nouveau client
+    const [showClientModal, setShowClientModal] = useState(false);
     
     // Totaux
     const [totalHT, setTotalHT] = useState(0);
@@ -76,6 +80,23 @@ function DevisFormModal({ devis, onClose, onSuccess }) {
         }
     };
 
+    const handleNouveauClient = () => {
+        setShowClientModal(true);
+    };
+
+    const handleClientCreated = (nouveauClient) => {
+        if (!nouveauClient || !nouveauClient.id_client) {
+            console.error('Client créé invalide:', nouveauClient);
+            toast.error('Erreur lors de la création du client');
+            return;
+        }
+        
+        setClients([...clients, nouveauClient]);
+        setFormData({ ...formData, id_client: nouveauClient.id_client });
+        setShowClientModal(false);
+        toast.success('Client créé avec succès');
+    };
+
     const generateNumeroDevis = async () => {
         try {
             const numero = await devisService.generateNumero();
@@ -123,18 +144,29 @@ function DevisFormModal({ devis, onClose, onSuccess }) {
         const article = articles.find(a => a.id_article === parseInt(selectedArticle));
         if (!article) return;
 
-        const montantHT = article.prix_vente * quantite;
+        // Vérifier si l'article existe déjà dans les lignes
+        const ligneExiste = lignesDevis.findIndex(l => l.id_article === article.id_article);
         
-        const nouvelleLigne = {
-            id_article: article.id_article,
-            designation: article.designation,
-            quantite: quantite,
-            prix_unitaire: article.prix_vente,
-            montant_ht: montantHT,
-            type_article: article.type_article // Ajouter le type (PRODUIT ou SERVICE)
-        };
-
-        setLignesDevis([...lignesDevis, nouvelleLigne]);
+        if (ligneExiste !== -1) {
+            // Article existe déjà: augmenter la quantité
+            const nouvellesLignes = [...lignesDevis];
+            nouvellesLignes[ligneExiste].quantite += quantite;
+            nouvellesLignes[ligneExiste].montant_ht = nouvellesLignes[ligneExiste].prix_unitaire * nouvellesLignes[ligneExiste].quantite;
+            setLignesDevis(nouvellesLignes);
+        } else {
+            // Article n'existe pas: ajouter une nouvelle ligne
+            const montantHT = article.prix_vente * quantite;
+            
+            const nouvelleLigne = {
+                id_article: article.id_article,
+                designation: article.designation,
+                quantite: quantite,
+                prix_unitaire: article.prix_vente,
+                montant_ht: montantHT,
+                type_article: article.type_article // Ajouter le type (PRODUIT ou SERVICE)
+            };
+            setLignesDevis([...lignesDevis, nouvelleLigne]);
+        }
         setSelectedArticle('');
         setQuantite(1);
     };
@@ -195,14 +227,15 @@ function DevisFormModal({ devis, onClose, onSuccess }) {
     };
 
     return (
-        <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-container modal-large" onClick={(e) => e.stopPropagation()}>
-                <div className="modal-header">
-                    <h2>{devis ? 'Modifier le Devis' : 'Nouveau Devis'}</h2>
-                    <button className="btn-close" onClick={onClose}>✕</button>
-                </div>
+        <>
+            <div className="modal-overlay" onClick={onClose}>
+                <div className="modal-container modal-large" onClick={(e) => e.stopPropagation()}>
+                    <div className="modal-header">
+                        <h2>{devis ? 'Modifier le Devis' : 'Nouveau Devis'}</h2>
+                        <button className="btn-close" onClick={onClose}>✕</button>
+                    </div>
 
-                <form onSubmit={handleSubmit} className="modal-body">
+                    <form onSubmit={handleSubmit} className="modal-body">
                     <div className="form-scroll">
                         {/* Informations de base */}
                         <div className="form-grid">
@@ -229,19 +262,30 @@ function DevisFormModal({ devis, onClose, onSuccess }) {
 
                             <div className="form-group">
                                 <label>Client *</label>
-                                <select
-                                    value={formData.id_client}
-                                    onChange={(e) => setFormData({ ...formData, id_client: e.target.value })}
-                                    className="form-control"
-                                    required
-                                >
-                                    <option value="">Sélectionner un client</option>
-                                    {clients.map(client => (
-                                        <option key={client.id_client} value={client.id_client}>
-                                            {client.nom} - {client.telephone || 'N/A'}
-                                        </option>
-                                    ))}
-                                </select>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <select
+                                        value={formData.id_client}
+                                        onChange={(e) => setFormData({ ...formData, id_client: e.target.value })}
+                                        className="form-control"
+                                        required
+                                        style={{ flex: 1 }}
+                                    >
+                                        <option value="">Sélectionner un client</option>
+                                        {clients.map(client => (
+                                            <option key={client.id_client} value={client.id_client}>
+                                                {client.nom} - {client.telephone || 'N/A'}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <button 
+                                        type="button" 
+                                        className="btn btn-secondary"
+                                        onClick={handleNouveauClient}
+                                        style={{ whiteSpace: 'nowrap' }}
+                                    >
+                                        + Nouveau
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="form-group">
@@ -377,9 +421,18 @@ function DevisFormModal({ devis, onClose, onSuccess }) {
                             ✓ Enregistrer
                         </button>
                     </div>
-                </form>
+                    </form>
+                </div>
             </div>
-        </div>
+
+            {/* Modal nouveau client */}
+            {showClientModal && (
+                <ClientForm
+                    onClose={() => setShowClientModal(false)}
+                    onSuccess={handleClientCreated}
+                />
+            )}
+        </>
     );
 }
 

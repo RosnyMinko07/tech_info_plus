@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { FaPlus, FaSearch, FaSync, FaEdit, FaTrash, FaFilePdf, FaDollarSign, FaFileExport, FaPrint, FaFileInvoice } from 'react-icons/fa';
 import { factureService, formatMontant, formatDate, downloadPDF } from '../services/api';
+import api from '../services/api';
 import { toast } from 'react-toastify';
 import ReglementModal from '../components/ReglementModal';
 import DevisToFactureModal from '../components/DevisToFactureModal';
 import FacturationFormModal from '../components/FacturationFormModal';
 import { generateFacturePDF } from '../services/pdfGenerator';
-import { confirmDelete } from '../utils/sweetAlertHelper';
+import { confirmDelete, confirmAction } from '../utils/sweetAlertHelper';
 import '../styles/CommonPages.css';
 import '../styles/Facturation.css';
 
@@ -20,6 +21,10 @@ function Facturation() {
   const [showReglementModal, setShowReglementModal] = useState(false);
   const [factureForReglement, setFactureForReglement] = useState(null);
   const [showDevisModal, setShowDevisModal] = useState(false);
+  const [selectedDevis, setSelectedDevis] = useState(null);
+  
+  // Utilisateur connecté
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
   
   // Statistiques
   const [stats, setStats] = useState({
@@ -117,6 +122,12 @@ function Facturation() {
     setFilteredFactures(facturesClients);
   };
 
+  const handleDevisSelected = (devis) => {
+    setSelectedDevis(devis);
+    setShowDevisModal(false);
+    setShowForm(true);
+  };
+
   const handleAdd = () => {
     setSelectedFacture(null);
     setShowForm(true);
@@ -127,6 +138,25 @@ function Facturation() {
     setShowForm(true);
   };
 
+  const handleAnnuler = async (facture) => {
+    const confirmed = await confirmAction(
+      'Annuler cette facture ?',
+      `Voulez-vous annuler la facture ${facture.numero_facture} ? Les stocks seront restaurés.`,
+      'Oui, annuler',
+      'warning'
+    );
+    if (!confirmed) return;
+    
+    try {
+      await factureService.annuler(facture.id_facture);
+      toast.success('✅ Facture annulée avec succès');
+      loadFactures();
+    } catch (error) {
+      toast.error('❌ Erreur lors de l\'annulation');
+      console.error(error);
+    }
+  };
+
   const handleDelete = async (facture) => {
     const confirmed = await confirmDelete(`la facture "${facture.numero_facture}"`);
     if (!confirmed) return;
@@ -134,10 +164,10 @@ function Facturation() {
     try {
       await factureService.delete(facture.id_facture);
       toast.success('✅ Facture supprimée avec succès');
-      loadFactures();
-    } catch (error) {
+        loadFactures();
+      } catch (error) {
       toast.error('❌ Erreur lors de la suppression');
-      console.error(error);
+        console.error(error);
     }
   };
 
@@ -168,8 +198,7 @@ function Facturation() {
         nif: factureDetails.client_nif || ''
       };
       
-      // Informations entreprise (TODO: récupérer depuis une API config)
-      // Récupérer les infos de l'entreprise depuis la configuration
+      // Informations entreprise (chargées depuis la configuration)
       let entreprise = {
         nom: 'TECH INFO PLUS',
         adresse: 'Douala, Cameroun',
@@ -180,28 +209,47 @@ function Facturation() {
       };
       
       try {
-        const configResponse = await fetch('http://localhost:8000/api/entreprise/config');
-        if (configResponse.ok) {
-          const configData = await configResponse.json();
-          console.log('📋 Config entreprise reçue:', configData);
-          if (configData) {
-            entreprise = {
-              nom: configData.nom || entreprise.nom,
-              adresse: configData.adresse || entreprise.adresse,
-              telephone: configData.telephone || entreprise.telephone,
-              email: configData.email || entreprise.email,
-              nif: configData.nif || entreprise.nif,
-              logo_path: configData.logo_path || null
-            };
-            console.log('🏢 Entreprise pour PDF:', {
-              nom: entreprise.nom,
-              adresse: entreprise.adresse,
-              logo: entreprise.logo_path ? 'Présent' : 'Absent'
-            });
-          }
+        const { data: configData } = await api.get('/api/entreprise/config');
+        if (configData) {
+          entreprise = {
+            nom: configData.nom || entreprise.nom,
+            adresse: configData.adresse || entreprise.adresse,
+            telephone: configData.telephone || entreprise.telephone,
+            email: configData.email || entreprise.email,
+            nif: configData.nif || entreprise.nif,
+            logo_path: configData.logo_path || null
+          };
         }
       } catch (error) {
         console.warn('⚠️ Impossible de charger la config entreprise:', error);
+      }
+      
+      // Normaliser le logo: convertir en Data URL si c'est un chemin/URL serveur
+      if (entreprise.logo_path && !entreprise.logo_path.startsWith('data:image')) {
+        try {
+          // Construire l'URL absolue si nécessaire
+          let logoUrl = entreprise.logo_path;
+          const hostname = window.location.hostname;
+          const baseURL = (hostname === 'localhost' || hostname === '127.0.0.1')
+            ? 'http://localhost:8000'
+            : `http://${hostname}:8000`;
+          if (!logoUrl.startsWith('http')) {
+            logoUrl = logoUrl.startsWith('/') ? `${baseURL}${logoUrl}` : `${baseURL}/${logoUrl}`;
+          }
+          // Télécharger et convertir en base64
+          const response = await fetch(logoUrl);
+          const blob = await response.blob();
+          const toDataURL = (b) => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(b);
+          });
+          const dataUrl = await toDataURL(blob);
+          entreprise.logo_path = dataUrl;
+        } catch (e) {
+          console.warn('⚠️ Impossible de charger le logo, on continue sans:', e);
+        }
       }
       
       // Générer le PDF
@@ -217,6 +265,8 @@ function Facturation() {
   const getStatusColor = (statut) => {
     switch (statut) {
       case 'Payée': return '#28a745';
+      case 'Partiellement payée': return '#ffc107';
+      case 'IMPAYÉE': return '#dc3545';
       case 'En attente': return '#ffc107';
       case 'Annulée': return '#dc3545';
       default: return '#6c757d';
@@ -226,6 +276,8 @@ function Facturation() {
   const getStatusIcon = (statut) => {
     switch (statut) {
       case 'Payée': return '✅';
+      case 'Partiellement payée': return '💰';
+      case 'IMPAYÉE': return '⚠️';
       case 'En attente': return '⏳';
       case 'Annulée': return '❌';
       default: return '📄';
@@ -274,15 +326,6 @@ function Facturation() {
           </button>
         </div>
         
-        {/* Boutons à droite */}
-        <div className="export-buttons">
-          <button className="btn btn-info btn-export">
-            📤 Exporter
-          </button>
-          <button className="btn btn-warning btn-print">
-            🖨️ Imprimer
-          </button>
-        </div>
       </div>
 
       {/* Cartes de statistiques comme Python */}
@@ -336,6 +379,7 @@ function Facturation() {
           <div className="header-cell">CLIENT</div>
           <div className="header-cell">DATE</div>
           <div className="header-cell">STATUT</div>
+          <div className="header-cell">CRÉÉ PAR</div>
           <div className="header-cell">MONTANT</div>
           <div className="header-cell">ACTIONS</div>
         </div>
@@ -369,6 +413,9 @@ function Facturation() {
                   >
                     {getStatusIcon(facture.statut)} {facture.statut}
                   </span>
+                </div>
+                <div className="table-cell" style={{ color: '#3B82F6', fontWeight: 'bold' }}>
+                  {facture.cree_par || 'Système'}
                 </div>
                 <div className="table-cell">
                   <div className="montant-details">
@@ -420,6 +467,7 @@ function Facturation() {
                       className="btn btn-sm btn-info"
                       onClick={() => handleEdit(facture)}
                       title="Modifier"
+                      disabled={facture.statut === 'Annulée'}
                     >
                       ✏️
                     </button>
@@ -427,6 +475,7 @@ function Facturation() {
                       className="btn btn-sm btn-warning"
                       onClick={() => handleReglement(facture)}
                       title="Règlement"
+                      disabled={facture.statut === 'Annulée'}
                     >
                       💵
                     </button>
@@ -437,6 +486,16 @@ function Facturation() {
                     >
                       👁️
                     </button>
+                    {facture.statut !== 'Annulée' && (
+                      <button
+                        className="btn btn-sm btn-danger"
+                        onClick={() => handleAnnuler(facture)}
+                        title="Annuler"
+                        style={{ backgroundColor: '#dc3545', borderColor: '#dc3545' }}
+                      >
+                        ❌
+                      </button>
+                    )}
                     <button
                       className="btn btn-sm btn-danger"
                       onClick={() => handleDelete(facture)}
@@ -456,13 +515,16 @@ function Facturation() {
       {showForm && (
         <FacturationFormModal
           facture={selectedFacture}
+          devis={selectedDevis}
           onClose={() => {
             setShowForm(false);
             setSelectedFacture(null);
+            setSelectedDevis(null);
           }}
           onSuccess={() => {
             setShowForm(false);
             setSelectedFacture(null);
+            setSelectedDevis(null);
             loadFactures();
           }}
         />
@@ -486,10 +548,7 @@ function Facturation() {
       {showDevisModal && (
         <DevisToFactureModal
           onClose={() => setShowDevisModal(false)}
-          onSuccess={() => {
-            setShowDevisModal(false);
-            loadFactures();
-          }}
+          onSuccess={handleDevisSelected}
         />
       )}
     </div>

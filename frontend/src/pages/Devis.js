@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaPlus, FaSearch, FaSync, FaFileExport, FaPrint, FaFilePdf, FaCheck, FaEdit, FaTrash, FaMoneyBillWave } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import { devisService, formatMontant, formatDate, downloadPDF } from '../services/api';
+import api, { devisService, formatMontant, formatDate, downloadPDF } from '../services/api';
 import DevisFormModal from '../components/DevisFormModal';
 import { generateDevisPDF } from '../services/pdfGenerator';
 import { confirmDelete, confirmValidateDevis, confirmAction } from '../utils/sweetAlertHelper';
@@ -101,6 +101,25 @@ function Devis() {
         }
     };
 
+    const handleAnnuler = async (devis) => {
+        const confirmed = await confirmAction(
+            'Annuler ce devis ?',
+            `Voulez-vous annuler le devis ${devis.numero_devis} ?`,
+            'Oui, annuler',
+            'warning'
+        );
+        if (!confirmed) return;
+        
+        try {
+            await devisService.annuler(devis.id_devis);
+            toast.success('✅ Devis annulé avec succès');
+            loadDevis();
+        } catch (error) {
+            toast.error('❌ Erreur lors de l\'annulation');
+            console.error(error);
+        }
+    };
+
     const handleDelete = async (devis) => {
         const confirmed = await confirmDelete(`le devis "${devis.numero_devis}"`);
         if (!confirmed) return;
@@ -134,8 +153,7 @@ function Devis() {
             toast.info('📄 Génération du PDF...');
             
             // Récupérer les détails du devis avec les lignes
-            const directResponse = await fetch(`http://localhost:8000/api/devis/${devis.id_devis}/details`);
-            const devisDetails = await directResponse.json();
+            const { data: devisDetails } = await api.get(`/api/devis/${devis.id_devis}/details`);
             const lignes = devisDetails.lignes || [];
             
             if (lignes.length === 0) {
@@ -162,22 +180,19 @@ function Devis() {
             };
             
             try {
-                const configResponse = await fetch('http://localhost:8000/api/entreprise/config');
-                if (configResponse.ok) {
-                    const configData = await configResponse.json();
-                    if (configData) {
-                        entreprise = {
-                            nom: configData.nom || entreprise.nom,
-                            adresse: configData.adresse || entreprise.adresse,
-                            telephone: configData.telephone || entreprise.telephone,
-                            email: configData.email || entreprise.email,
-                            nif: configData.nif || entreprise.nif,
-                            logo_path: configData.logo_path || null
-                        };
-                    }
+                const { data: configData } = await api.get('/api/entreprise/config');
+                if (configData) {
+                    entreprise = {
+                        nom: configData.nom || entreprise.nom,
+                        adresse: configData.adresse || entreprise.adresse,
+                        telephone: configData.telephone || entreprise.telephone,
+                        email: configData.email || entreprise.email,
+                        nif: configData.nif || entreprise.nif,
+                        logo_path: configData.logo_path || null
+                    };
                 }
-            } catch (error) {
-                console.warn('⚠️ Impossible de charger la config entreprise:', error);
+            } catch (e) {
+                console.warn('⚠️ Impossible de charger la config entreprise:', e);
             }
             
             await generateDevisPDF(devisDetails, lignes, client, entreprise);
@@ -250,6 +265,7 @@ function Devis() {
             case 'Accepté': return '#10B981';
             case 'En attente': return '#F59E0B';
             case 'Refusé': return '#EF4444';
+            case 'Annulé': return '#dc3545';
             default: return '#6B7280';
         }
     };
@@ -298,12 +314,6 @@ function Devis() {
                     <button className="btn btn-secondary" onClick={loadDevis}>
                         <FaSync /> Actualiser
                     </button>
-                    <button className="btn btn-primary" onClick={handleExport}>
-                        <FaFileExport /> Exporter
-                    </button>
-                    <button className="btn btn-warning" onClick={handlePrint}>
-                        <FaPrint /> Imprimer
-                    </button>
                 </div>
             </div>
 
@@ -340,6 +350,7 @@ function Devis() {
                                 <th>CLIENT</th>
                                 <th>MONTANT</th>
                                 <th>STATUT</th>
+                                <th>CRÉÉ PAR</th>
                                 <th>FACTURÉ</th>
                                 <th>ACTIONS</th>
                             </tr>
@@ -347,7 +358,7 @@ function Devis() {
                         <tbody>
                             {filteredDevis.length === 0 ? (
                                 <tr>
-                                    <td colSpan="6" style={{ textAlign: 'center', padding: '40px' }}>
+                                    <td colSpan="7" style={{ textAlign: 'center', padding: '40px' }}>
                                         Aucun devis trouvé
                                     </td>
                                 </tr>
@@ -375,6 +386,9 @@ function Devis() {
                                             }}>
                                                 {devis.statut}
                                             </span>
+                                        </td>
+                                        <td style={{ color: '#3B82F6', fontWeight: 'bold' }}>
+                                            {devis.cree_par || 'Système'}
                                         </td>
                                         <td style={{ textAlign: 'center' }}>
                                             {getFactureStatus(devis)}
@@ -415,6 +429,7 @@ function Devis() {
                                                     </button>
                                                 )}
                                                 
+                                                {devis.statut !== 'Annulé' && (
                                                 <button
                                                     className="btn-icon"
                                                     onClick={() => handleEdit(devis)}
@@ -423,6 +438,18 @@ function Devis() {
                                                 >
                                                     <FaEdit />
                                                 </button>
+                                                )}
+                                                
+                                                {devis.statut !== 'Annulé' && (
+                                                    <button
+                                                        className="btn-icon"
+                                                        onClick={() => handleAnnuler(devis)}
+                                                        title="Annuler"
+                                                        style={{ backgroundColor: '#dc3545', color: 'white' }}
+                                                    >
+                                                        ❌
+                                                    </button>
+                                                )}
                                                 
                                                 <button
                                                     className="btn-icon"

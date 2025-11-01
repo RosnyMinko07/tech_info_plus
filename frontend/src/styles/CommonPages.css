@@ -24,7 +24,7 @@
 
 .page-header h1 {
   font-size: var(--titre-principal);
-  color: var(--accent-bleu);
+  color: var(--texte-principal);
   margin-bottom: 5px;
 }
 
@@ -288,5 +288,92 @@ textarea.input-field {
     width: 30px;
     height: 30px;
     font-size: 12px;
+  }
+}
+
+/* ============================================
+   MODAL DÉTAILS CLIENT
+   ============================================ */
+
+.client-details {
+  color: #333;
+}
+
+.details-section {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #1f538d;
+}
+
+.details-section h3 {
+  margin: 0 0 16px 0;
+  color: #1f538d;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-item label {
+  font-weight: 600;
+  color: #666;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-item span {
+  color: #333;
+  font-size: 14px;
+  padding: 4px 0;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.stat-item .stat-label {
+  font-size: 12px;
+  color: #666;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.stat-item .stat-value {
+  font-size: 18px;
+  font-weight: bold;
+  color: #1f538d;
+}
+
+/* Responsive pour le modal des détails */
+@media (max-width: 768px) {
+  .details-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

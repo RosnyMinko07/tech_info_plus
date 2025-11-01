@@ -1,0 +1,130 @@
+═══════════════════════════════════════════════════════════════════
+  🔄 GUIDE DE MIGRATION - NUMÉROS FOURNISSEURS
+═══════════════════════════════════════════════════════════════════
+
+PROBLÈME
+────────────────────────────────────────────────────────────────────
+Les fournisseurs existants dans la base de données n'ont pas de 
+numéro (affichage "N/A" dans l'interface).
+
+SOLUTION
+────────────────────────────────────────────────────────────────────
+Deux solutions ont été mises en place :
+
+1. ✅ GÉNÉRATION AUTOMATIQUE (pour les NOUVEAUX fournisseurs)
+   - Désormais, chaque nouveau fournisseur créé reçoit automatiquement
+     un numéro au format : FOUR-2025-001, FOUR-2025-002, etc.
+   - Cette fonctionnalité est déjà active dans le code.
+
+2. 📋 MIGRATION MANUELLE (pour les fournisseurs EXISTANTS)
+   - Il faut exécuter un script de migration pour attribuer des numéros
+     aux fournisseurs qui existent déjà dans la base.
+
+
+═══════════════════════════════════════════════════════════════════
+  🚀 MÉTHODE 1 : DOUBLE-CLIQUER SUR LE FICHIER .BAT
+═══════════════════════════════════════════════════════════════════
+
+1. Trouver le fichier : MIGRER_FOURNISSEURS.bat
+2. Double-cliquer dessus
+3. Appuyer sur Entrée pour confirmer
+4. Attendre la fin de l'exécution
+
+✅ C'est tout !
+
+
+═══════════════════════════════════════════════════════════════════
+  🛠️ MÉTHODE 2 : COMMANDE MANUELLE
+═══════════════════════════════════════════════════════════════════
+
+Ouvrir PowerShell ou CMD dans le dossier du projet, puis :
+
+cd backend
+python migration_fournisseurs.py
+
+Ou depuis le dossier racine :
+
+python backend\migration_fournisseurs.py
+
+
+═══════════════════════════════════════════════════════════════════
+  📊 RÉSULTAT ATTENDU
+═══════════════════════════════════════════════════════════════════
+
+La migration affichera :
+
+============================================================
+🚀 MIGRATION DES FOURNISSEURS
+============================================================
+📋 Trouvé X fournisseur(s) sans numéro
+  ✅ Fournisseur ABC → FOUR-2025-001
+  ✅ Fournisseur XYZ → FOUR-2025-002
+  ✅ Client Test → FOUR-2025-003
+
+🎉 Migration terminée ! 3 fournisseur(s) mis à jour.
+============================================================
+
+
+═══════════════════════════════════════════════════════════════════
+  ⚠️ IMPORTANT
+═══════════════════════════════════════════════════════════════════
+
+• La migration peut être exécutée plusieurs fois sans risque
+  (elle ne touche que les fournisseurs SANS numéro)
+
+• Faire une SAUVEGARDE de la base de données avant la migration
+  si vous avez beaucoup de données importantes
+
+• Après la migration, rafraîchir la page web pour voir les 
+  numéros dans l'interface
+
+
+═══════════════════════════════════════════════════════════════════
+  🐛 PROBLÈMES POSSIBLES
+═══════════════════════════════════════════════════════════════════
+
+❌ "Module 'database_mysql' not found"
+   → Vérifier que vous êtes dans le bon dossier
+   → Essayer : cd backend && python migration_fournisseurs.py
+
+❌ "Access denied for user"
+   → Vérifier les identifiants MySQL dans config.env
+
+❌ Aucun changement visible dans l'interface
+   → Rafraîchir la page web (Ctrl+F5)
+   → Vérifier que le backend est redémarré
+
+
+═══════════════════════════════════════════════════════════════════
+  ✅ VÉRIFICATION
+═══════════════════════════════════════════════════════════════════
+
+Après la migration :
+
+1. Ouvrir l'application web
+2. Aller dans le module "Fournisseurs"
+3. Vérifier que les numéros apparaissent (plus de "N/A")
+
+
+═══════════════════════════════════════════════════════════════════
+  📞 SUPPORT
+═══════════════════════════════════════════════════════════════════
+
+Si vous rencontrez des problèmes :
+1. Vérifier les logs dans la console
+2. S'assurer que MySQL est démarré
+3. Vérifier que le fichier backend/config.env est correctement 
+   configuré
+
+
+═══════════════════════════════════════════════════════════════════
+  🎉 C'EST FAIT !
+═══════════════════════════════════════════════════════════════════
+
+Une fois la migration exécutée, tous vos fournisseurs auront un 
+numéro unique, et les nouveaux fournisseurs créés le recevront 
+automatiquement.
+
+Bon courage ! 🚀
+
+

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaSearch, FaSync, FaEdit, FaTrash } from 'react-icons/fa';
+import { FaPlus, FaSearch, FaSync, FaEdit, FaTrash, FaEye } from 'react-icons/fa';
 import { fournisseurService } from '../services/api';
 import { toast } from 'react-toastify';
 import FournisseurFormModal from '../components/FournisseurFormModal';
@@ -13,6 +13,8 @@ function Fournisseurs() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [selectedFournisseur, setSelectedFournisseur] = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
+  const [fournisseurDetails, setFournisseurDetails] = useState(null);
 
   useEffect(() => {
     loadFournisseurs();
@@ -59,6 +61,17 @@ function Fournisseurs() {
       loadFournisseurs();
     } catch (error) {
       toast.error('❌ Erreur lors de la suppression');
+    }
+  };
+
+  const handleViewDetails = async (fournisseur) => {
+    try {
+      const details = await fournisseurService.getById(fournisseur.id_fournisseur);
+      setFournisseurDetails(details);
+      setShowDetails(true);
+    } catch (error) {
+      console.error('Erreur chargement détails:', error);
+      toast.error('❌ Erreur lors du chargement des détails');
     }
   };
 
@@ -150,6 +163,9 @@ function Fournisseurs() {
                   </td>
                   <td>
                     <div className="action-buttons">
+                      <button className="btn-icon btn-info" onClick={() => handleViewDetails(fournisseur)} title="Voir">
+                        <FaEye />
+                      </button>
                       <button className="btn-icon btn-primary" onClick={() => { setSelectedFournisseur(fournisseur); setShowForm(true); }} title="Modifier">
                         <FaEdit />
                       </button>
@@ -164,6 +180,106 @@ function Fournisseurs() {
           </tbody>
         </table>
       </div>
+
+      {/* Formulaire modal */}
+      {showForm && (
+        <FournisseurFormModal
+          fournisseur={selectedFournisseur}
+          onClose={() => setShowForm(false)}
+          onSuccess={() => {
+            setShowForm(false);
+            setSelectedFournisseur(null);
+            loadFournisseurs();
+          }}
+        />
+      )}
+
+      {/* Modal Détails Fournisseur */}
+      {showDetails && fournisseurDetails && (
+        <div className="modal-overlay" onClick={() => setShowDetails(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{maxWidth: '700px'}}>
+            <div className="modal-header">
+              <h2>🏭 Détails du Fournisseur</h2>
+              <button className="btn-close" onClick={() => setShowDetails(false)}>✕</button>
+            </div>
+
+            <div className="modal-body">
+              <div className="client-details">
+                <div className="details-section">
+                  <h3>🏢 Informations Entreprise</h3>
+                  <div className="details-grid">
+                    <div className="detail-item">
+                      <label>Nom:</label>
+                      <span>{fournisseurDetails.nom_fournisseur}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Téléphone:</label>
+                      <span>{fournisseurDetails.telephone || 'Non renseigné'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Email:</label>
+                      <span>{fournisseurDetails.email || 'Non renseigné'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Ville:</label>
+                      <span>{fournisseurDetails.ville || 'Non renseignée'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Pays:</label>
+                      <span>{fournisseurDetails.pays || 'Non renseigné'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>NIF:</label>
+                      <span>{fournisseurDetails.nif || 'Non renseigné'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Date création:</label>
+                      <span>{new Date(fournisseurDetails.created_at).toLocaleDateString('fr-FR')}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="details-section">
+                  <h3>📍 Adresse</h3>
+                  <div className="detail-item">
+                    <label>Adresse complète:</label>
+                    <span>{fournisseurDetails.adresse || 'Non renseignée'}</span>
+                  </div>
+                </div>
+
+                <div className="details-section">
+                  <h3>📊 Statistiques</h3>
+                  <div className="stats-grid">
+                    <div className="stat-item">
+                      <div className="stat-label">Articles</div>
+                      <div className="stat-value">{fournisseurDetails.statistiques.nb_articles}</div>
+                    </div>
+                    <div className="stat-item">
+                      <div className="stat-label">Montant Total Achats</div>
+                      <div className="stat-value">{fournisseurDetails.statistiques.montant_total_achats.toLocaleString()} FCFA</div>
+                    </div>
+                    <div className="stat-item">
+                      <div className="stat-label">Dernier Article</div>
+                      <div className="stat-value">
+                        {fournisseurDetails.statistiques.dernier_article 
+                          ? new Date(fournisseurDetails.statistiques.dernier_article).toLocaleDateString('fr-FR')
+                          : 'Aucun'
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn-primary" onClick={() => setShowDetails(false)}>
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

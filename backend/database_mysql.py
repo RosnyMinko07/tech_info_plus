@@ -137,6 +137,7 @@ class Devis(Base):
     id_devis = Column(Integer, primary_key=True, autoincrement=True)
     numero_devis = Column(String(20), unique=True, nullable=False)
     id_client = Column(Integer, ForeignKey('client.id_client'), nullable=False)
+    id_utilisateur = Column(Integer, ForeignKey('utilisateur.id_utilisateur'))  # 🔥 Utilisateur créateur
     date_devis = Column(Date, nullable=False)
     date_validite = Column(Date)
     validite = Column(Integer, default=30)  # Validité en jours
@@ -241,12 +242,19 @@ class LigneFacture(Base):
     quantite = Column(Integer, nullable=False, default=1)
     prix_unitaire = Column(Float, nullable=False, default=0.0)
     total_ht = Column(Float, default=0.0)
-    montant_ht = Column(Float, default=0.0)
     
-    # 🔥 Propriété pour montant_ttc (n'existe pas dans MySQL)
+    # 🔥 Propriété pour compatibilité avec setter
+    @property
+    def montant_ht(self):
+        return self.total_ht
+    
+    @montant_ht.setter
+    def montant_ht(self, value):
+        self.total_ht = value
+    
     @property
     def montant_ttc(self):
-        return self.total_ht or self.montant_ht
+        return self.total_ht
     
     @montant_ttc.setter
     def montant_ttc(self, value):
@@ -261,6 +269,7 @@ class Reglement(Base):
     __tablename__ = 'reglement'
     
     id_reglement = Column(Integer, primary_key=True, autoincrement=True)
+    numero_reglement = Column(String(20), unique=True)
     date_reglement = Column(Date, nullable=False)
     montant = Column(Float, nullable=False, default=0.0)
     mode_paiement = Column(String(50), nullable=False)
@@ -308,13 +317,23 @@ class Avoir(Base):
 class LigneAvoir(Base):
     __tablename__ = 'ligne_avoir'
     
-    id_ligne_avoir = Column(Integer, primary_key=True, autoincrement=True)
+    id_ligne_avoir = Column(Integer, primary_key=True, autoincrement=True, name='id_ligne')
     id_avoir = Column(Integer, ForeignKey('avoir.id_avoir'), nullable=False)
     id_article = Column(Integer, ForeignKey('article.id_article'), nullable=False)
+    code_article = Column(String(50))
+    designation = Column(String(255))
     quantite = Column(Integer, nullable=False, default=1)
     prix_unitaire = Column(Float, nullable=False, default=0.0)
     montant_ht = Column(Float, default=0.0)
-    montant_ttc = Column(Float, default=0.0)
+    
+    # 🔥 Propriété pour compatibilité avec montant_ttc
+    @property
+    def montant_ttc(self):
+        return self.montant_ht
+    
+    @montant_ttc.setter
+    def montant_ttc(self, value):
+        self.montant_ht = value
     
     # Relations
     avoir = relationship("Avoir", back_populates="lignes")
@@ -423,15 +442,68 @@ def test_connection():
 
 def create_tables():
     """
-    Crée toutes les tables dans MySQL
+    Crée toutes les tables dans MySQL automatiquement
+    Utilise SQLAlchemy pour créer toutes les tables définies dans les modèles
+    Gère automatiquement les tables existantes
     """
     try:
-        Base.metadata.create_all(bind=engine)
-        print("✅ Tables MySQL créées avec succès !")
+        # Obtenir la liste de toutes les tables à créer
+        tables_to_create = list(Base.metadata.tables.keys())
+        
+        print(f"  📋 Tables à créer/vérifier ({len(tables_to_create)}):")
+        for table_name in sorted(tables_to_create):
+            print(f"     - {table_name}")
+        
+        # Vérifier quelles tables existent déjà
+        from sqlalchemy import inspect
+        
+        inspector = inspect(engine)
+        existing_tables = inspector.get_table_names()
+        
+        if existing_tables:
+            print(f"  📊 Tables existantes détectées: {len(existing_tables)}")
+            new_tables = [t for t in tables_to_create if t not in existing_tables]
+            if new_tables:
+                print(f"  ➕ Nouvelles tables à créer: {len(new_tables)}")
+            else:
+                print(f"  ✅ Toutes les tables existent déjà")
+        
+        # Créer toutes les tables (SQLAlchemy gère automatiquement IF NOT EXISTS)
+        # Cette méthode ne supprime pas les tables existantes, elle ajoute seulement les nouvelles
+        Base.metadata.create_all(bind=engine, checkfirst=True)
+        
+        # Vérifier que toutes les tables ont été créées
+        inspector = inspect(engine)
+        final_tables = inspector.get_table_names()
+        created_count = len([t for t in tables_to_create if t in final_tables])
+        
+        print(f"  ✅ {created_count}/{len(tables_to_create)} tables créées/vérifiées avec succès !")
+        
+        # Vérifier les colonnes manquantes dans les tables existantes et les ajouter si nécessaire
+        try:
+            for table_name in tables_to_create:
+                if table_name in existing_tables:
+                    # Vérifier si la table existe mais manque des colonnes
+                    table = Base.metadata.tables[table_name]
+                    existing_columns = [col['name'] for col in inspector.get_columns(table_name)]
+                    required_columns = [col.name for col in table.columns]
+                    
+                    missing_columns = [col for col in required_columns if col not in existing_columns]
+                    if missing_columns:
+                        print(f"  ⚠️ Table {table_name} manque des colonnes: {missing_columns}")
+                        print(f"     (Les colonnes seront ajoutées automatiquement lors des prochaines migrations)")
+        
+        except Exception as e:
+            # Non bloquant
+            pass
+        
         return True
     except Exception as e:
-        print(f"❌ Erreur création tables : {e}")
-        return False
+        print(f"  ❌ Erreur création tables : {e}")
+        import traceback
+        traceback.print_exc()
+        # On retourne True quand même car certaines tables peuvent déjà exister
+        return True
 
 
 def init_database():

@@ -40,6 +40,15 @@ const Dashboard = () => {
     }
   );
 
+  // Libellés de mois pour affichage propre
+  const moisLabels = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Aoû','Sep','Oct','Nov','Déc'];
+  const formatMoisTick = (v) => {
+    if (v == null) return '';
+    const n = Number(v);
+    if (!Number.isNaN(n) && n >= 1 && n <= 12) return moisLabels[n - 1];
+    return String(v);
+  };
+
   // Récupérer l'activité récente
   const { data: recentActivity, isLoading: activityLoading } = useQuery(
     'recent-activity',
@@ -165,7 +174,7 @@ const Dashboard = () => {
             <h1 style={{ 
               fontSize: '28px', 
               fontWeight: 'bold', 
-              color: '#1890ff',
+              color: 'var(--texte-principal)',
               margin: 0
             }}>
               📊 Tableau de Bord
@@ -341,12 +350,19 @@ const Dashboard = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="#404040" />
                 <XAxis 
                   dataKey="mois" 
+                  interval={0}
+                  tickMargin={8}
                   stroke="#a0a0a0"
-                  tick={{ fill: '#a0a0a0' }}
+                  tick={{ fill: '#a0a0a0', fontSize: 12 }}
+                  tickFormatter={formatMoisTick}
+                  axisLine={{ stroke: '#a0a0a0' }}
+                  tickLine={{ stroke: '#a0a0a0' }}
                 />
                 <YAxis 
                   stroke="#a0a0a0"
-                  tick={{ fill: '#a0a0a0' }}
+                  tick={{ fill: '#a0a0a0', fontSize: 12 }}
+                  axisLine={{ stroke: '#a0a0a0' }}
+                  tickLine={{ stroke: '#a0a0a0' }}
                 />
                 <Tooltip 
                   contentStyle={{ 
@@ -357,7 +373,7 @@ const Dashboard = () => {
                 />
                 <Bar 
                   dataKey="total" 
-                  fill="#1890ff" 
+                  fill="#1f538d" 
                   radius={[4, 4, 0, 0]}
                 />
               </BarChart>
@@ -377,12 +393,19 @@ const Dashboard = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="#404040" />
                 <XAxis 
                   dataKey="mois" 
+                  interval={0}
+                  tickMargin={8}
                   stroke="#a0a0a0"
-                  tick={{ fill: '#a0a0a0' }}
+                  tick={{ fill: '#a0a0a0', fontSize: 12 }}
+                  tickFormatter={formatMoisTick}
+                  axisLine={{ stroke: '#a0a0a0' }}
+                  tickLine={{ stroke: '#a0a0a0' }}
                 />
                 <YAxis 
                   stroke="#a0a0a0"
-                  tick={{ fill: '#a0a0a0' }}
+                  tick={{ fill: '#a0a0a0', fontSize: 12 }}
+                  axisLine={{ stroke: '#a0a0a0' }}
+                  tickLine={{ stroke: '#a0a0a0' }}
                 />
                 <Tooltip 
                   contentStyle={{ 
@@ -394,9 +417,9 @@ const Dashboard = () => {
                 <Line 
                   type="monotone" 
                   dataKey="total" 
-                  stroke="#52c41a" 
+                  stroke="#28a745" 
                   strokeWidth={2}
-                  dot={{ fill: '#52c41a' }}
+                  dot={{ fill: '#28a745' }}
                 />
               </LineChart>
             </ResponsiveContainer>

@@ -1,0 +1,60 @@
+===========================================================
+GUIDE : Correction du problème "Système" comme vendeur
+===========================================================
+
+PROBLÈME IDENTIFIÉ :
+-------------------
+Dans l'historique des ventes, le vendeur était affiché comme "Système" au lieu du nom de l'utilisateur connecté.
+
+CAUSE :
+-------
+Les factures créées au comptoir n'avaient pas l'ID utilisateur assigné lors de leur création.
+
+SOLUTION APPLIQUÉE :
+-------------------
+
+1. Backend (backend/api/comptoir_routes.py) :
+   - Ajout d'une fonction get_current_user_id() pour extraire l'ID utilisateur du token JWT
+   - Modification de creer_vente_comptoir() pour récupérer l'utilisateur connecté
+   - Ajout de id_utilisateur dans la création de Facture
+   - Toutes les nouvelles ventes au comptoir auront maintenant le bon vendeur
+
+2. Migration des données existantes :
+   - Script: backend/migrer_id_utilisateur.py
+   - Batch: MIGRER_ID_UTILISATEUR.bat
+   - Les factures existantes sans id_utilisateur ont été assignées à l'admin par défaut
+
+COMMENT UTILISER :
+------------------
+
+Pour les nouvelles ventes :
+- AUCUNE ACTION REQUISE
+- Les nouvelles ventes afficheront automatiquement le nom du vendeur connecté
+
+Pour les ventes existantes :
+- Déjà corrigé automatiquement pour 2 factures existantes
+- Toutes les factures affichent maintenant "Administrateur" au lieu de "Système"
+
+TECHNIQUE :
+----------
+- Le token JWT contient l'ID utilisateur (format: token_{id}_{timestamp})
+- La fonction get_current_user_id() extrait cet ID du header Authorization
+- L'ID est ensuite assigné à id_utilisateur lors de la création de la facture
+- L'historique des ventes joint la table Utilisateur pour afficher le nom_utilisateur
+
+FICHIERS MODIFIÉS :
+------------------
+- backend/api/comptoir_routes.py (ajout get_current_user_id et id_utilisateur)
+- backend/migrer_id_utilisateur.py (nouveau - script de migration)
+- MIGRER_ID_UTILISATEUR.bat (nouveau - exécution facile)
+
+TEST :
+-----
+1. Connectez-vous avec votre compte utilisateur
+2. Créez une vente au comptoir
+3. Vérifiez l'historique des ventes
+4. Le vendeur doit maintenant être votre nom d'utilisateur
+
+===========================================================
+
+

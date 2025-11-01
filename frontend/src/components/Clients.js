@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Facturation.css'; // Réutilise le CSS
+import { confirmDelete, showError, showSuccess } from '../utils/sweetAlertHelper';
 
 const Clients = () => {
   // ==================== ÉTATS ====================
@@ -9,6 +10,8 @@ const Clients = () => {
   const [searchText, setSearchText] = useState('');
   const [formulaireOuvert, setFormulaireOuvert] = useState(false);
   const [clientSelectionne, setClientSelectionne] = useState(null);
+  const [detailsOuvert, setDetailsOuvert] = useState(false);
+  const [clientDetails, setClientDetails] = useState(null);
   const [typeFiltre, setTypeFiltre] = useState('Tous');
 
   // Statistiques
@@ -45,9 +48,10 @@ const Clients = () => {
       console.log('🔍 Premier client:', response.data[0]);
       
       // ⚠️ TEST RADICAL - ALERTE
+      // Debug - peut être supprimé en production
       if (response.data.length > 0) {
         const premier = response.data[0];
-        alert(`TEST DEBUG:\nnom: ${premier.nom}\nville: ${premier.ville}\nadresse: ${premier.adresse}`);
+        console.log('Premier client:', { nom: premier.nom, ville: premier.ville, adresse: premier.adresse });
       }
       
       setClients(response.data);
@@ -103,7 +107,7 @@ const Clients = () => {
 
   const enregistrerClient = async () => {
     if (!formData.nom) {
-      alert('Le nom est obligatoire');
+      showError('Le nom est obligatoire');
       return;
     }
 
@@ -116,37 +120,69 @@ const Clients = () => {
           formData,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        alert('Client modifié avec succès');
+        showSuccess('Client modifié avec succès');
       } else {
         await axios.post(
           'http://localhost:8000/api/clients',
           formData,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        alert('Client créé avec succès');
+        showSuccess('Client créé avec succès');
       }
 
       fermerFormulaire();
       chargerClients();
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de l\'enregistrement du client');
+      showError('Erreur lors de l\'enregistrement du client');
     }
   };
 
   const supprimerClient = async (idClient) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce client ?')) return;
+    const confirmed = await confirmDelete('ce client');
+    if (!confirmed) return;
 
     try {
       const token = localStorage.getItem('token');
       await axios.delete(`http://localhost:8000/api/clients/${idClient}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      alert('Client supprimé');
+      showSuccess('Client supprimé');
       chargerClients();
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de la suppression');
+      if (error.response?.status === 400) {
+        // Proposer la suppression forcée
+        const forceDelete = await confirmDelete('ce client ET tous ses documents (factures et devis)');
+        if (forceDelete) {
+          try {
+            await axios.delete(`http://localhost:8000/api/clients/${idClient}?force=true`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            showSuccess('Client et documents supprimés définitivement');
+            chargerClients();
+          } catch (forceError) {
+            console.error('Erreur suppression forcée:', forceError);
+            showError('Erreur lors de la suppression forcée');
+          }
+        }
+      } else {
+        showError('Erreur lors de la suppression');
+      }
+    }
+  };
+
+  const voirDetailsClient = async (client) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`http://localhost:8000/api/clients/${client.id_client}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setClientDetails(response.data);
+      setDetailsOuvert(true);
+    } catch (error) {
+      console.error('Erreur:', error);
+      showError('Erreur lors du chargement des détails');
     }
   };
 
@@ -253,6 +289,13 @@ const Clients = () => {
                   <td>{client.ville || '-'}</td>
                   <td>{client.nif || '-'}</td>
                   <td>
+                    <button 
+                      className="btn-icon"
+                      onClick={() => voirDetailsClient(client)}
+                      title="Voir les détails"
+                    >
+                      👁️
+                    </button>
                     <button 
                       className="btn-icon"
                       onClick={() => ouvrirFormulaireModification(client)}
@@ -366,6 +409,93 @@ const Clients = () => {
               </button>
               <button className="btn-primary" onClick={fermerFormulaire}>
                 Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Détails Client */}
+      {detailsOuvert && clientDetails && (
+        <div className="modal-overlay" onClick={() => setDetailsOuvert(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{maxWidth: '700px'}}>
+            <div className="modal-header">
+              <h2>📋 Détails du Client</h2>
+              <button className="btn-close" onClick={() => setDetailsOuvert(false)}>✕</button>
+            </div>
+
+            <div className="modal-body">
+              <div className="client-details">
+                <div className="details-section">
+                  <h3>👤 Informations Personnelles</h3>
+                  <div className="details-grid">
+                    <div className="detail-item">
+                      <label>Nom:</label>
+                      <span>{clientDetails.nom}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Type:</label>
+                      <span>{clientDetails.type_client}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Téléphone:</label>
+                      <span>{clientDetails.telephone || 'Non renseigné'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Email:</label>
+                      <span>{clientDetails.email || 'Non renseigné'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>NIF:</label>
+                      <span>{clientDetails.nif || 'Non renseigné'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Date création:</label>
+                      <span>{new Date(clientDetails.date_creation).toLocaleDateString('fr-FR')}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="details-section">
+                  <h3>📍 Adresse</h3>
+                  <div className="detail-item">
+                    <label>Adresse complète:</label>
+                    <span>{clientDetails.adresse || 'Non renseignée'}</span>
+                  </div>
+                </div>
+
+                <div className="details-section">
+                  <h3>📊 Statistiques</h3>
+                  <div className="stats-grid">
+                    <div className="stat-item">
+                      <div className="stat-label">Factures</div>
+                      <div className="stat-value">{clientDetails.statistiques.nb_factures}</div>
+                    </div>
+                    <div className="stat-item">
+                      <div className="stat-label">Devis</div>
+                      <div className="stat-value">{clientDetails.statistiques.nb_devis}</div>
+                    </div>
+                    <div className="stat-item">
+                      <div className="stat-label">CA Total</div>
+                      <div className="stat-value">{clientDetails.statistiques.ca_total.toLocaleString()} FCFA</div>
+                    </div>
+                    <div className="stat-item">
+                      <div className="stat-label">Dernière facture</div>
+                      <div className="stat-value">
+                        {clientDetails.statistiques.derniere_facture 
+                          ? new Date(clientDetails.statistiques.derniere_facture).toLocaleDateString('fr-FR')
+                          : 'Aucune'
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn-primary" onClick={() => setDetailsOuvert(false)}>
+                Fermer
               </button>
             </div>
           </div>

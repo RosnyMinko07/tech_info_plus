@@ -24,7 +24,7 @@ function DroitsModal({ utilisateur, onClose, onSuccess }) {
         gestion_produits: 'Gestion des produits',
         gestion_stock: 'Gestion du stock',
         gestion_rapports: 'Gestion des rapports',
-        gestion_avoirs: 'Gestion des avoirs',
+        // gestion_avoirs: 'Gestion des avoirs', // 🔒 Module désactivé
         gestion_reglements: 'Gestion des règlements',
         gestion_comptoir: 'Gestion du comptoir',
         gestion_devis: 'Gestion des devis'

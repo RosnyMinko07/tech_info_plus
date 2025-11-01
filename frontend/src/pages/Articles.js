@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaSearch, FaSync, FaEdit, FaTrash, FaFileImport, FaFileExport } from 'react-icons/fa';
+import { FaPlus, FaSearch, FaSync, FaEdit, FaTrash, FaFileImport, FaFileExport, FaEye } from 'react-icons/fa';
 import { articleService, formatMontant } from '../services/api';
 import { toast } from 'react-toastify';
 import ArticleFormModal from '../components/ArticleFormModal';
@@ -13,6 +13,8 @@ function Articles() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
+  const [articleDetails, setArticleDetails] = useState(null);
 
   useEffect(() => {
     loadArticles();
@@ -77,6 +79,17 @@ function Articles() {
     }
   };
 
+  const handleViewDetails = async (article) => {
+    try {
+      const details = await articleService.getById(article.id_article);
+      setArticleDetails(details);
+      setShowDetails(true);
+    } catch (error) {
+      console.error('Erreur chargement détails:', error);
+      toast.error('❌ Erreur lors du chargement des détails');
+    }
+  };
+
   if (loading) {
     return <div className="page-loading"><div className="spinner"></div></div>;
   }
@@ -85,6 +98,7 @@ function Articles() {
     total: articles.length,
     produits: articles.filter(a => a.type_article === 'PRODUIT').length,
     services: articles.filter(a => a.type_article === 'SERVICE').length,
+    stockBas: articles.filter(a => a.type_article === 'PRODUIT' && a.stock_actuel <= a.stock_alerte).length,
   };
 
   return (
@@ -128,6 +142,20 @@ function Articles() {
           <div>
             <p className="stat-label">Services</p>
             <p className="stat-value">{stats.services}</p>
+          </div>
+        </div>
+        <div className="stat-card-small" style={{
+          backgroundColor: stats.stockBas > 0 ? '#fff3cd' : '#f8f9fa',
+          borderLeft: stats.stockBas > 0 ? '4px solid #ffc107' : 'none'
+        }}>
+          <div className="stat-icon" style={{color: stats.stockBas > 0 ? '#ffc107' : '#666'}}>
+            {stats.stockBas > 0 ? '⚠️' : '📊'}
+          </div>
+          <div>
+            <p className="stat-label">Stock faible</p>
+            <p className="stat-value" style={{color: stats.stockBas > 0 ? '#ffc107' : '#666'}}>
+              {stats.stockBas}
+            </p>
           </div>
         </div>
       </div>
@@ -175,9 +203,27 @@ function Articles() {
                 <tr key={article.id_article}>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span style={{ fontSize: '20px' }}>
-                        {article.type_article === 'SERVICE' ? '🔧' : '📦'}
-                      </span>
+                      {article.type_article === 'PRODUIT' && article.image_path ? (
+                        <img 
+                          src={article.image_path} 
+                          alt={article.designation}
+                          style={{ 
+                            width: '50px', 
+                            height: '50px', 
+                            objectFit: 'cover', 
+                            borderRadius: '5px',
+                            border: '1px solid #ddd'
+                          }}
+                          onError={(e) => {
+                            e.target.src = '';
+                            e.target.outerHTML = '<span style="font-size:20px">📦</span>';
+                          }}
+                        />
+                      ) : (
+                        <span style={{ fontSize: '20px' }}>
+                          {article.type_article === 'SERVICE' ? '🔧' : '📦'}
+                        </span>
+                      )}
                       <div>
                         <strong>{article.code_article}</strong><br />
                         {article.designation}
@@ -197,6 +243,9 @@ function Articles() {
                   </td>
                   <td>
                     <div className="action-buttons">
+                      <button className="btn-icon btn-info" onClick={() => handleViewDetails(article)} title="Voir">
+                        <FaEye />
+                      </button>
                       <button className="btn-icon btn-primary" onClick={() => handleEdit(article)} title="Modifier">
                         <FaEdit />
                       </button>
@@ -211,6 +260,144 @@ function Articles() {
           </tbody>
         </table>
       </div>
+
+      {/* Formulaire modal */}
+      {showForm && (
+        <ArticleFormModal
+          article={selectedArticle}
+          onClose={() => setShowForm(false)}
+          onSuccess={handleFormSuccess}
+        />
+      )}
+
+      {/* Modal Détails Article */}
+      {showDetails && articleDetails && (
+        <div className="modal-overlay" onClick={() => setShowDetails(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{maxWidth: '800px'}}>
+            <div className="modal-header">
+              <h2>📦 Détails de l'Article</h2>
+              <button className="btn-close" onClick={() => setShowDetails(false)}>✕</button>
+            </div>
+
+            <div className="modal-body">
+              <div className="client-details">
+                {/* Image de l'article */}
+                {articleDetails.image_url && (
+                  <div className="details-section">
+                    <h3>🖼️ Image</h3>
+                    <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                      <img 
+                        src={articleDetails.image_url} 
+                        alt={articleDetails.designation}
+                        style={{
+                          maxWidth: '300px',
+                          maxHeight: '300px',
+                          borderRadius: '8px',
+                          border: '1px solid #ddd',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                        }}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'block';
+                        }}
+                      />
+                      <div style={{ display: 'none', fontSize: '48px', color: '#666' }}>
+                        📦
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="details-section">
+                  <h3>📋 Informations Générales</h3>
+                  <div className="details-grid">
+                    <div className="detail-item">
+                      <label>Code:</label>
+                      <span>{articleDetails.code_article}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Désignation:</label>
+                      <span>{articleDetails.designation}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Type:</label>
+                      <span>{articleDetails.type_article}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Description:</label>
+                      <span>{articleDetails.description || 'Non renseignée'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Date création:</label>
+                      <span>{new Date(articleDetails.created_at).toLocaleDateString('fr-FR')}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="details-section">
+                  <h3>💰 Prix et Stock</h3>
+                  <div className="details-grid">
+                    <div className="detail-item">
+                      <label>Prix d'achat:</label>
+                      <span>{formatMontant(articleDetails.prix_achat)}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Prix de vente:</label>
+                      <span>{formatMontant(articleDetails.prix_vente)}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Stock actuel:</label>
+                      <span style={{ 
+                        color: articleDetails.stock_actuel < articleDetails.stock_minimum ? '#dc3545' : '#28a745',
+                        fontWeight: 'bold'
+                      }}>
+                        {articleDetails.type_article === 'PRODUIT' ? articleDetails.stock_actuel : 'N/A'}
+                      </span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Stock minimum:</label>
+                      <span>{articleDetails.type_article === 'PRODUIT' ? articleDetails.stock_minimum : 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="details-section">
+                  <h3>📊 Statistiques de Vente</h3>
+                  <div className="stats-grid">
+                    <div className="stat-item">
+                      <div className="stat-label">Nombre de ventes</div>
+                      <div className="stat-value">{articleDetails.statistiques.nb_ventes}</div>
+                    </div>
+                    <div className="stat-item">
+                      <div className="stat-label">Quantité vendue</div>
+                      <div className="stat-value">{articleDetails.statistiques.quantite_vendue}</div>
+                    </div>
+                    <div className="stat-item">
+                      <div className="stat-label">CA généré</div>
+                      <div className="stat-value">{formatMontant(articleDetails.statistiques.ca_genere)}</div>
+                    </div>
+                    <div className="stat-item">
+                      <div className="stat-label">Dernière vente</div>
+                      <div className="stat-value">
+                        {articleDetails.statistiques.derniere_vente 
+                          ? new Date(articleDetails.statistiques.derniere_vente).toLocaleDateString('fr-FR')
+                          : 'Aucune'
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn-primary" onClick={() => setShowDetails(false)}>
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

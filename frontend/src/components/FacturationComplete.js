@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import './Facturation.css';
+import { confirmDelete, showError, showSuccess } from '../utils/sweetAlertHelper';
 
 const FacturationComplete = () => {
   // ==================== ÉTATS ====================
@@ -67,15 +68,12 @@ const FacturationComplete = () => {
   const chargerFactures = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:8000/api/factures', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/api/factures');
       setFactures(response.data);
       calculerStatistiques(response.data);
     } catch (error) {
       console.error('Erreur chargement factures:', error);
-      alert('Erreur lors du chargement des factures');
+      showError('Erreur lors du chargement des factures');
     } finally {
       setLoading(false);
     }
@@ -83,10 +81,7 @@ const FacturationComplete = () => {
 
   const chargerClients = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:8000/api/clients', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/api/clients');
       setClients(response.data);
     } catch (error) {
       console.error('Erreur chargement clients:', error);
@@ -95,10 +90,7 @@ const FacturationComplete = () => {
 
   const chargerArticles = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:8000/api/articles', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/api/articles');
       setArticles(response.data);
     } catch (error) {
       console.error('Erreur chargement articles:', error);
@@ -107,10 +99,7 @@ const FacturationComplete = () => {
 
   const genererNumeroFacture = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:8000/api/factures/generer-numero', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/api/factures/generer-numero');
       setFormData(prev => ({ ...prev, numero_facture: response.data.numero }));
     } catch (error) {
       console.error('Erreur génération numéro:', error);
@@ -189,22 +178,34 @@ const FacturationComplete = () => {
   // ==================== GESTION DES ARTICLES ====================
   const ajouterArticle = () => {
     if (!articleSelectionne || quantite <= 0) {
-      alert('Veuillez sélectionner un article et une quantité valide');
+      showError('Veuillez sélectionner un article et une quantité valide');
       return;
     }
 
     const article = articles.find(a => a.id_article === parseInt(articleSelectionne));
     if (!article) return;
 
-    const nouvelleLigne = {
-      id_article: article.id_article,
-      designation: article.designation,
-      quantite: parseInt(quantite),
-      prix_unitaire: parseFloat(article.prix_vente),
-      montant_total: parseFloat(article.prix_vente) * parseInt(quantite)
-    };
-
-    setLignesFacture([...lignesFacture, nouvelleLigne]);
+    // Vérifier si l'article existe déjà dans les lignes
+    const ligneExiste = lignesFacture.findIndex(l => l.id_article === article.id_article);
+    
+    if (ligneExiste !== -1) {
+      // Article existe déjà: augmenter la quantité
+      const nouvellesLignes = [...lignesFacture];
+      nouvellesLignes[ligneExiste].quantite += parseInt(quantite);
+      nouvellesLignes[ligneExiste].montant_total = nouvellesLignes[ligneExiste].prix_unitaire * nouvellesLignes[ligneExiste].quantite;
+      setLignesFacture(nouvellesLignes);
+    } else {
+      // Article n'existe pas: ajouter une nouvelle ligne
+      const nouvelleLigne = {
+        id_article: article.id_article,
+        designation: article.designation,
+        quantite: parseInt(quantite),
+        prix_unitaire: parseFloat(article.prix_vente),
+        montant_total: parseFloat(article.prix_vente) * parseInt(quantite)
+      };
+      setLignesFacture([...lignesFacture, nouvelleLigne]);
+    }
+    
     setArticleSelectionne('');
     setQuantite(1);
   };
@@ -261,10 +262,7 @@ const FacturationComplete = () => {
 
   const chargerLignesFacture = async (idFacture) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:8000/api/factures/${idFacture}/lignes`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get(`/api/factures/${idFacture}/lignes`);
       setLignesFacture(response.data);
     } catch (error) {
       console.error('Erreur chargement lignes:', error);
@@ -279,7 +277,7 @@ const FacturationComplete = () => {
 
   const enregistrerFacture = async () => {
     if (!formData.id_client || lignesFacture.length === 0) {
-      alert('Veuillez sélectionner un client et ajouter au moins un article');
+      showError('Veuillez sélectionner un client et ajouter au moins un article');
       return;
     }
 
@@ -292,49 +290,37 @@ const FacturationComplete = () => {
     };
 
     try {
-      const token = localStorage.getItem('token');
-      
       if (factureSelectionnee) {
         // Modification
-        await axios.put(
-          `http://localhost:8000/api/factures/${factureSelectionnee.id_facture}`,
-          factureData,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        alert('Facture modifiée avec succès');
+        await api.put(`/api/factures/${factureSelectionnee.id_facture}`,
+          factureData);
+        showSuccess('Facture modifiée avec succès');
       } else {
         // Création
-        await axios.post(
-          'http://localhost:8000/api/factures',
-          factureData,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        alert('Facture créée avec succès');
+        await api.post('/api/factures',
+          factureData);
+        showSuccess('Facture créée avec succès');
       }
 
       fermerFormulaire();
       chargerFactures();
     } catch (error) {
       console.error('Erreur enregistrement:', error);
-      alert('Erreur lors de l\'enregistrement de la facture');
+      showError('Erreur lors de l\'enregistrement de la facture');
     }
   };
 
   const supprimerFacture = async (idFacture) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette facture ?')) {
-      return;
-    }
+    const confirmed = await confirmDelete('cette facture');
+    if (!confirmed) return;
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:8000/api/factures/${idFacture}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      alert('Facture supprimée avec succès');
+      await api.delete(`/api/factures/${idFacture}`);
+      showSuccess('Facture supprimée avec succès');
       chargerFactures();
     } catch (error) {
       console.error('Erreur suppression:', error);
-      alert('Erreur lors de la suppression de la facture');
+      showError('Erreur lors de la suppression de la facture');
     }
   };
 

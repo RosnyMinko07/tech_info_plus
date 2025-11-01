@@ -11,10 +11,10 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  // Récupérer le thème depuis localStorage ou utiliser 'dark' par défaut
+  // Récupérer le thème depuis localStorage ou utiliser 'light' par défaut
   const [theme, setTheme] = useState(() => {
     const savedTheme = localStorage.getItem('theme');
-    return savedTheme || 'dark';
+    return savedTheme || 'light';
   });
 
   // Appliquer le thème au body

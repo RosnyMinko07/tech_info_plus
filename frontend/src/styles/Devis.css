@@ -20,7 +20,7 @@
 .devis-title {
   font-size: 32px;
   font-weight: bold;
-  color: var(--accent-bleu, #3B82F6);
+  color: var(--texte-principal);
   margin: 0;
   margin-bottom: 5px;
 }

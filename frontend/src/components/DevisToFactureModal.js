@@ -3,7 +3,7 @@ import { FaTimes, FaFileInvoice } from 'react-icons/fa';
 import { devisService, formatMontant, formatDate } from '../services/api';
 import { toast } from 'react-toastify';
 
-function DevisToFactureModal({ onClose, onSelect }) {
+function DevisToFactureModal({ onClose, onSuccess }) {
   const [devisList, setDevisList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -29,7 +29,7 @@ function DevisToFactureModal({ onClose, onSelect }) {
   };
 
   const handleSelect = (devis) => {
-    onSelect(devis);
+    onSuccess(devis);
     onClose();
   };
 

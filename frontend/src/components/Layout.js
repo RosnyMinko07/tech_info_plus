@@ -9,6 +9,7 @@ import {
 import '../styles/Layout.css';
 import { useTheme } from '../context/ThemeContext';
 import { confirmLogout } from '../utils/sweetAlertHelper';
+import api from '../services/api';
 
 function Layout() {
   const navigate = useNavigate();
@@ -31,11 +32,7 @@ function Layout() {
       if (!user || user.role !== 'ADMIN') return;
       
       try {
-        const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:8000/api/bugs/stats', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await response.json();
+        const { data } = await api.get('/api/bugs/stats');
         setBugsOuverts(data.ouverts || 0);
       } catch (error) {
         console.error('Erreur chargement stats bugs:', error);
@@ -54,7 +51,7 @@ function Layout() {
     if (confirmed) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      toast.info('✅ Déconnexion réussie');
+      toast.success('✅ Déconnexion réussie');
       navigate('/login');
     }
   };
@@ -68,7 +65,7 @@ function Layout() {
     { path: '/devis', icon: <FaFileAlt />, label: 'Devis', right: 'gestion_devis' },
     { path: '/facturation', icon: <FaFileInvoice />, label: 'Facturation', right: 'gestion_factures' },
     { path: '/reglements', icon: <FaDollarSign />, label: 'Règlements', right: 'gestion_reglements' },
-    { path: '/avoirs', icon: <FaUndo />, label: 'Avoirs', right: 'gestion_avoirs' },
+    // { path: '/avoirs', icon: <FaUndo />, label: 'Avoirs', right: 'gestion_avoirs' }, // 🔒 Désactivé temporairement
     { path: '/comptoir', icon: <FaShoppingCart />, label: 'Comptoir', right: 'gestion_comptoir' },
     { path: '/stock', icon: <FaCubes />, label: 'Stock', right: 'gestion_stock' },
     { path: '/inventaire', icon: <FaClipboardList />, label: 'Inventaire', right: 'gestion_stock' },
@@ -121,8 +118,31 @@ function Layout() {
 
   const isActive = (path) => location.pathname === path;
 
+  // Fermer le menu au clic en dehors sur mobile
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (window.innerWidth <= 768 && !collapsed) {
+        const sidebar = document.querySelector('.sidebar');
+        if (sidebar && !sidebar.contains(e.target)) {
+          setCollapsed(true);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [collapsed]);
+
   return (
     <div className="layout">
+      {/* Overlay pour mobile */}
+      {window.innerWidth <= 768 && !collapsed && (
+        <div 
+          className="sidebar-overlay"
+          onClick={() => setCollapsed(true)}
+        />
+      )}
+      
       {/* Menu latéral */}
       <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
         {/* Boutons de contrôle */}

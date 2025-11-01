@@ -20,7 +20,7 @@
 .rapports-title {
   font-size: 32px;
   font-weight: bold;
-  color: #ffffff;
+  color: var(--texte-principal);
   margin: 0;
 }
 
@@ -44,24 +44,24 @@
 }
 
 .periode-group label {
-  color: #ffffff;
+  color: var(--texte-principal);
   font-size: 14px;
   font-weight: 600;
 }
 
 .periode-select {
   padding: 10px 15px;
-  background-color: #0F172A;
-  border: 1px solid #334155;
+  background-color: var(--bg-tertiaire);
+  border: 1px solid var(--bordure);
   border-radius: 6px;
-  color: #ffffff;
+  color: var(--texte-principal);
   font-size: 14px;
   cursor: pointer;
 }
 
 .periode-select:focus {
   outline: none;
-  border-color: #3B82F6;
+  border-color: var(--bordure-focus);
 }
 
 .action-buttons {
@@ -88,18 +88,21 @@
 }
 
 .btn-primary {
-  background-color: #3B82F6;
+  background-color: transparent;
+  border: 2px solid var(--bordure);
   color: white;
 }
 
 .btn-success {
-  background-color: #10B981;
-  color: white;
+  background-color: transparent;
+  border: 2px solid var(--bordure);
+  color: var(--texte-principal);
 }
 
 .btn-danger {
-  background-color: #EF4444;
-  color: white;
+  background-color: transparent;
+  border: 2px solid var(--bordure);
+  color: var(--texte-secondaire);
 }
 
 /* ============================================
@@ -107,15 +110,15 @@
    ============================================ */
 
 .rapports-selection {
-  background-color: #1E293B;
-  border: 1px solid #334155;
+  background-color: var(--bg-secondaire);
+  border: 1px solid var(--bordure);
   border-radius: 8px;
   padding: 20px;
   margin-bottom: 20px;
 }
 
 .rapports-selection h3 {
-  color: #ffffff;
+  color: var(--texte-principal);
   font-size: 16px;
   font-weight: bold;
   margin: 0 0 15px 0;
@@ -131,8 +134,8 @@
   padding: 12px 16px;
   border: 2px solid transparent;
   border-radius: 8px;
-  background-color: #0F172A;
-  color: #ffffff;
+  background-color: var(--bg-tertiaire);
+  color: var(--texte-principal);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -144,7 +147,7 @@
 }
 
 .rapport-btn:hover {
-  border-color: #3B82F6;
+  border-color: var(--bordure-focus);
   transform: translateY(-2px);
 }
 
@@ -162,24 +165,24 @@
    ============================================ */
 
 .rapports-results {
-  background-color: #1E293B;
-  border: 1px solid #334155;
+  background-color: var(--bg-secondaire);
+  border: 1px solid var(--bordure);
   border-radius: 8px;
   padding: 20px;
   min-height: 500px;
 }
 
 .rapport-content {
-  color: #ffffff;
+  color: var(--texte-principal);
 }
 
 .rapport-titre {
   font-size: 20px;
   font-weight: bold;
-  color: #3B82F6;
+  color: var(--texte-principal);
   margin: 0 0 30px 0;
   padding-bottom: 15px;
-  border-bottom: 2px solid #334155;
+  border-bottom: 2px solid var(--bordure);
 }
 
 /* ============================================
@@ -194,8 +197,8 @@
 }
 
 .stat-box {
-  background-color: #0F172A;
-  border: 1px solid #334155;
+  background-color: var(--bg-tertiaire);
+  border: 1px solid var(--bordure);
   border-radius: 8px;
   padding: 20px;
   text-align: center;
@@ -203,14 +206,69 @@
 
 .stat-label {
   font-size: 14px;
-  color: #94A3B8;
+  color: var(--texte-secondaire);
   margin-bottom: 10px;
 }
 
 .stat-value {
   font-size: 28px;
   font-weight: bold;
-  color: #3B82F6;
+  color: var(--texte-principal);
+}
+
+.stat-comparison {
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.1);
+  display: inline-block;
+}
+
+.stat-comparison span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ============================================
+   COMPARAISONS
+   ============================================ */
+
+.comparison-summary {
+  background-color: var(--bg-tertiaire);
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+}
+
+.comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+.comparison-item {
+  background-color: var(--bg-secondaire);
+  border: 1px solid var(--bordure);
+  border-radius: 6px;
+  padding: 15px;
+  text-align: center;
+}
+
+.comparison-label {
+  font-size: 12px;
+  color: var(--texte-secondaire);
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.comparison-value {
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--texte-principal);
 }
 
 /* ============================================
@@ -218,8 +276,8 @@
    ============================================ */
 
 .chart-container {
-  background-color: #0F172A;
-  border: 1px solid #334155;
+  background-color: var(--bg-tertiaire);
+  border: 1px solid var(--bordure);
   border-radius: 8px;
   padding: 20px;
   margin-top: 20px;
@@ -243,7 +301,7 @@
   justify-content: center;
   min-height: 400px;
   font-size: 16px;
-  color: #94A3B8;
+  color: var(--texte-secondaire);
 }
 
 .empty-state {
@@ -252,21 +310,21 @@
   justify-content: center;
   min-height: 400px;
   text-align: center;
-  color: #94A3B8;
+  color: var(--texte-secondaire);
   font-size: 16px;
 }
 
 .rapport-default {
-  color: #ffffff;
+  color: var(--texte-principal);
 }
 
 .rapport-default pre {
-  background-color: #0F172A;
-  border: 1px solid #334155;
+  background-color: var(--bg-tertiaire);
+  border: 1px solid var(--bordure);
   border-radius: 6px;
   padding: 20px;
   overflow-x: auto;
-  color: #94A3B8;
+  color: var(--texte-secondaire);
   font-size: 12px;
 }
 

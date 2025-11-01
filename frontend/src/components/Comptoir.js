@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import './Comptoir.css';
+import { confirmClearCart, confirmDelete, showError, showSuccessWithDetails } from '../utils/sweetAlertHelper';
 
 const Comptoir = () => {
   // ==================== ÉTATS ====================
@@ -47,10 +48,7 @@ const Comptoir = () => {
   const chargerArticles = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:8000/api/articles', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/api/articles');
       setArticles(response.data);
     } catch (error) {
       console.error('Erreur chargement articles:', error);
@@ -63,14 +61,11 @@ const Comptoir = () => {
   const chargerHistoriqueVentes = async () => {
     setLoadingHistorique(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:8000/api/comptoir/ventes?limit=50', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/api/comptoir/ventes', { params: { limit: 50 } });
       setVentesHistorique(response.data);
     } catch (error) {
       console.error('Erreur chargement historique:', error);
-      alert('Erreur lors du chargement de l\'historique');
+      showError('Erreur lors du chargement de l\'historique');
     } finally {
       setLoadingHistorique(false);
     }
@@ -89,20 +84,16 @@ const Comptoir = () => {
 
   // Supprimer une vente
   const supprimerVente = async (idVente, numeroVente) => {
-    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer la vente ${numeroVente} ?\n\nLe stock sera restauré.`)) {
-      return;
-    }
+    const confirmed = await confirmDelete(`la vente ${numeroVente}<br><small>Le stock sera restauré.</small>`);
+    if (!confirmed) return;
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:8000/api/comptoir/ventes/${idVente}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      alert('Vente supprimée avec succès');
+      await api.delete(`/api/comptoir/ventes/${idVente}`);
+      showSuccessWithDetails('Vente supprimée !', 'La vente a été supprimée et le stock a été restauré.');
       chargerHistoriqueVentes(); // Recharger l'historique
     } catch (error) {
       console.error('Erreur suppression:', error);
-      alert('Erreur lors de la suppression de la vente');
+      showError('Erreur lors de la suppression de la vente');
     }
   };
 
@@ -166,8 +157,9 @@ const Comptoir = () => {
     setPanier(panier.filter(p => p.id_article !== idArticle));
   };
 
-  const viderPanier = () => {
-    if (window.confirm('Vider le panier ?')) {
+  const viderPanier = async () => {
+    const confirmed = await confirmClearCart();
+    if (confirmed) {
       setPanier([]);
       setNomClient('');
       setMontantRecu('');
@@ -177,12 +169,12 @@ const Comptoir = () => {
   // ==================== PAIEMENT ====================
   const validerVente = async () => {
     if (panier.length === 0) {
-      alert('Le panier est vide');
+      showError('Le panier est vide');
       return;
     }
 
     if (modePaiement === 'Espèces' && parseFloat(totaux.monnaie) < 0) {
-      alert('Montant reçu insuffisant');
+      showError('Montant reçu insuffisant');
       return;
     }
 
@@ -198,14 +190,18 @@ const Comptoir = () => {
     };
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(
-        'http://localhost:8000/api/comptoir/ventes',
-        venteData,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await api.post('/api/comptoir/vente', venteData);
       
-      alert(`✅ Vente enregistrée !\n\nTotal: ${parseFloat(totaux.total_ttc).toLocaleString()} FCFA\nReçu: ${parseFloat(montantRecu || totaux.total_ttc).toLocaleString()} FCFA\nMonnaie: ${parseFloat(totaux.monnaie).toLocaleString()} FCFA`);
+      showSuccessWithDetails(
+        '✅ Vente enregistrée !',
+        `
+          <div style="text-align: left; margin: 10px 0;">
+            <strong>Total:</strong> ${parseFloat(totaux.total_ttc).toLocaleString()} FCFA<br>
+            <strong>Reçu:</strong> ${parseFloat(montantRecu || totaux.total_ttc).toLocaleString()} FCFA<br>
+            <strong>Monnaie:</strong> ${parseFloat(totaux.monnaie).toLocaleString()} FCFA
+          </div>
+        `
+      );
       
       // Réinitialiser
       setPanier([]);
@@ -214,7 +210,7 @@ const Comptoir = () => {
       setModePaiement('Espèces');
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de l\'enregistrement de la vente');
+      showError('Erreur lors de l\'enregistrement de la vente');
     }
   };
 

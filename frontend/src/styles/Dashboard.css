@@ -54,7 +54,7 @@
 .dashboard-title {
   font-size: 28px;
   font-weight: bold;
-  color: var(--accent-bleu);
+  color: var(--texte-principal);
   margin: 0 0 15px 0;
 }
 

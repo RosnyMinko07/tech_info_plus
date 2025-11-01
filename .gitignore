@@ -52,3 +52,39 @@ reports/
 # Temporary files
 *.tmp
 *.temp
+
+# Documents temporaires de test
+*.docx
+rosny_*.docx
+darren.docx
+darren.txt
+
+# Scripts de test/migration temporaires
+ajouter_numeros_pages.py
+verifier_numerotation.py
+corriger_numerotation.py
+verifier_numerotation_finale.py
+numeroter_*.py
+forcer_numeros_pages.py
+fix_simple.py
+corriger_final.py
+inserer_numeros_standard.py
+creer_macro_word.py
+ajouter_numero_page_vba.txt
+MACRO_NUMEROTATION.txt
+verifier_et_afficher_numeros.py
+
+# Fichiers temporaires
+template.txt
+methode.txt
+partie.txt
+plansoute.txt
+cas_utilisation.txt
+rapp*.txt
+
+# Installateur compilé
+TECH_INFO_PLUS_Installer.exe
+
+# Fichiers git temporaires
+git
+pla.puml

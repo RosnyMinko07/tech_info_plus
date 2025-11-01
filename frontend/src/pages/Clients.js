@@ -4,7 +4,7 @@ import { clientService } from '../services/api';
 import { toast } from 'react-toastify';
 import ClientForm from '../components/ClientForm';
 import '../styles/CommonPages.css';
-import { confirmDelete } from '../utils/sweetAlertHelper';
+import { confirmDelete, confirmDeleteClientWithDocuments } from '../utils/sweetAlertHelper';
 
 function Clients() {
   const [clients, setClients] = useState([]);
@@ -13,6 +13,8 @@ function Clients() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
+  const [clientDetails, setClientDetails] = useState(null);
   const [stats, setStats] = useState({ total: 0, particuliers: 0, entreprises: 0 });
 
   useEffect(() => {
@@ -71,13 +73,35 @@ function Clients() {
   };
 
   const handleDelete = async (client) => {
-    const confirmed = await confirmDelete(`le client "${client.nom}"`);
-    if (!confirmed) return;
-
     try {
-      await clientService.delete(client.id_client);
-      toast.success('✅ Client supprimé avec succès');
-      loadClients();
+      // D'abord, récupérer les détails du client pour voir s'il a des documents
+      const details = await clientService.getById(client.id_client);
+      const hasDocuments = details.statistiques.nb_factures > 0 || details.statistiques.nb_devis > 0;
+      
+      let confirmed;
+      if (hasDocuments) {
+        // Si le client a des documents, proposer directement la suppression forcée
+        confirmed = await confirmDeleteClientWithDocuments(
+          client.nom,
+          details.statistiques.nb_factures,
+          details.statistiques.nb_devis
+        );
+        
+        if (confirmed) {
+          await clientService.delete(client.id_client, { force: true });
+          toast.success('✅ Client et documents supprimés définitivement');
+          loadClients();
+        }
+      } else {
+        // Si pas de documents, suppression normale
+        confirmed = await confirmDelete(`le client "${client.nom}"`);
+        
+        if (confirmed) {
+          await clientService.delete(client.id_client);
+          toast.success('✅ Client supprimé avec succès');
+          loadClients();
+        }
+      }
     } catch (error) {
       console.error('Erreur suppression client:', error);
       toast.error('❌ Erreur lors de la suppression du client');
@@ -88,6 +112,17 @@ function Clients() {
     setShowForm(false);
     setSelectedClient(null);
     loadClients();
+  };
+
+  const handleViewDetails = async (client) => {
+    try {
+      const details = await clientService.getById(client.id_client);
+      setClientDetails(details);
+      setShowDetails(true);
+    } catch (error) {
+      console.error('Erreur chargement détails:', error);
+      toast.error('❌ Erreur lors du chargement des détails');
+    }
   };
 
   if (loading) {
@@ -207,7 +242,7 @@ function Clients() {
                   </td>
                   <td>
                     <div className="action-buttons">
-                      <button className="btn-icon btn-info" title="Voir">
+                      <button className="btn-icon btn-info" onClick={() => handleViewDetails(client)} title="Voir">
                         <FaEye />
                       </button>
                       <button className="btn-icon btn-primary" onClick={() => handleEdit(client)} title="Modifier">
@@ -232,6 +267,93 @@ function Clients() {
           onClose={() => setShowForm(false)}
           onSuccess={handleFormSuccess}
         />
+      )}
+
+      {/* Modal Détails Client */}
+      {showDetails && clientDetails && (
+        <div className="modal-overlay" onClick={() => setShowDetails(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{maxWidth: '700px'}}>
+            <div className="modal-header">
+              <h2>📋 Détails du Client</h2>
+              <button className="btn-close" onClick={() => setShowDetails(false)}>✕</button>
+            </div>
+
+            <div className="modal-body">
+              <div className="client-details">
+                <div className="details-section">
+                  <h3>👤 Informations Personnelles</h3>
+                  <div className="details-grid">
+                    <div className="detail-item">
+                      <label>Nom:</label>
+                      <span>{clientDetails.nom}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Type:</label>
+                      <span>{clientDetails.type_client}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Téléphone:</label>
+                      <span>{clientDetails.telephone || 'Non renseigné'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Email:</label>
+                      <span>{clientDetails.email || 'Non renseigné'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>NIF:</label>
+                      <span>{clientDetails.nif || 'Non renseigné'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Date création:</label>
+                      <span>{new Date(clientDetails.date_creation).toLocaleDateString('fr-FR')}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="details-section">
+                  <h3>📍 Adresse</h3>
+                  <div className="detail-item">
+                    <label>Adresse complète:</label>
+                    <span>{clientDetails.adresse || 'Non renseignée'}</span>
+                  </div>
+                </div>
+
+                <div className="details-section">
+                  <h3>📊 Statistiques</h3>
+                  <div className="stats-grid">
+                    <div className="stat-item">
+                      <div className="stat-label">Factures</div>
+                      <div className="stat-value">{clientDetails.statistiques.nb_factures}</div>
+                    </div>
+                    <div className="stat-item">
+                      <div className="stat-label">Devis</div>
+                      <div className="stat-value">{clientDetails.statistiques.nb_devis}</div>
+                    </div>
+                    <div className="stat-item">
+                      <div className="stat-label">CA Total</div>
+                      <div className="stat-value">{clientDetails.statistiques.ca_total.toLocaleString()} FCFA</div>
+                    </div>
+                    <div className="stat-item">
+                      <div className="stat-label">Dernière facture</div>
+                      <div className="stat-value">
+                        {clientDetails.statistiques.derniere_facture 
+                          ? new Date(clientDetails.statistiques.derniere_facture).toLocaleDateString('fr-FR')
+                          : 'Aucune'
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn-primary" onClick={() => setShowDetails(false)}>
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import './Facturation.css'; // Réutilise le même CSS
+import api from '../services/api';
+import ClientForm from './ClientForm';
+import './Facturation.css';
+import { confirmDelete, confirmAction, showError, showSuccess } from '../utils/sweetAlertHelper'; // Réutilise le même CSS
 
 const Devis = () => {
   // ==================== ÉTATS ====================
@@ -36,6 +38,9 @@ const Devis = () => {
   const [articleSelectionne, setArticleSelectionne] = useState('');
   const [quantite, setQuantite] = useState(1);
   
+  // Modal nouveau client
+  const [showClientModal, setShowClientModal] = useState(false);
+  
   // Calculs
   const [totaux, setTotaux] = useState({
     total_ht: 0,
@@ -59,10 +64,7 @@ const Devis = () => {
   const chargerDevis = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:8000/api/devis', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/api/devis');
       setDevis(response.data);
       calculerStatistiques(response.data);
     } catch (error) {
@@ -74,10 +76,7 @@ const Devis = () => {
 
   const chargerClients = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:8000/api/clients', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/api/clients');
       setClients(response.data);
     } catch (error) {
       console.error('Erreur:', error);
@@ -86,23 +85,34 @@ const Devis = () => {
 
   const chargerArticles = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:8000/api/articles', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/api/articles');
       setArticles(response.data);
     } catch (error) {
       console.error('Erreur:', error);
     }
   };
 
-  const genererNumeroDevis = async () => {
+  const handleNouveauClient = () => {
+    setShowClientModal(true);
+  };
+
+  const handleClientCreated = (nouveauClient) => {
+    if (!nouveauClient || !nouveauClient.id_client) {
+      console.error('Client créé invalide:', nouveauClient);
+      showError('Erreur lors de la création du client');
+      return;
+    }
+    
+    setClients([...clients, nouveauClient]);
+    setFormData({ ...formData, id_client: nouveauClient.id_client });
+    setShowClientModal(false);
+    showSuccess('Client créé avec succès');
+  };
+
+  const genererNumeroDevis = celsius () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:8000/api/devis/generer-numero', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setFormData(prev => ({ ...prev, numero_devis: response.data.numero }));
+      const response = await api.get('/api/devis/generer-numero');
+      setFormData(prev => ({ ...prev, numero_devis: response.numero || response.data.numero }));
     } catch (error) {
       const annee = new Date().getFullYear();
       const numero = `DEV-${annee}-${String(devis.length + 1).padStart(3, '0')}`;
@@ -139,20 +149,32 @@ const Devis = () => {
   // ==================== GESTION ARTICLES ====================
   const ajouterArticle = () => {
     if (!articleSelectionne || quantite <= 0) {
-      alert('Veuillez sélectionner un article et une quantité valide');
+      showError('Veuillez sélectionner un article et une quantité valide');
       return;
     }
 
     const article = articles.find(a => a.id_article === parseInt(articleSelectionne));
     if (!article) return;
 
-    setLignesDevis([...lignesDevis, {
-      id_article: article.id_article,
-      designation: article.designation,
-      quantite: parseInt(quantite),
-      prix_unitaire: parseFloat(article.prix_vente),
-      montant_total: parseFloat(article.prix_vente) * parseInt(quantite)
-    }]);
+    // Vérifier si l'article existe déjà dans les lignes
+    const ligneExiste = lignesDevis.findIndex(l => l.id_article === article.id_article);
+    
+    if (ligneExiste !== -1) {
+      // Article existe déjà: augmenter la quantité
+      const nouvellesLignes = [...lignesDevis];
+      nouvellesLignes[ligneExiste].quantite += parseInt(quantite);
+      nouvellesLignes[ligneExiste].montant_total = nouvellesLignes[ligneExiste].prix_unitaire * nouvellesLignes[ligneExiste].quantite;
+      setLignesDevis(nouvellesLignes);
+    } else {
+      // Article n'existe pas: ajouter une nouvelle ligne
+      setLignesDevis([...lignesDevis, {
+        id_article: article.id_article,
+        designation: article.designation,
+        quantite: parseInt(quantite),
+        prix_unitaire: parseFloat(article.prix_vente),
+        montant_total: parseFloat(article.prix_vente) * parseInt(quantite)
+      }]);
+    }
     
     setArticleSelectionne('');
     setQuantite(1);
@@ -186,6 +208,44 @@ const Devis = () => {
     setFormulaireOuvert(true);
   };
 
+  const ouvrirFormulaireModification = async (devis) => {
+    console.log('🔵 Ouverture modification devis:', devis);
+    
+    setDevisSelectionne(devis);
+    setFormData({
+      numero_devis: devis.numero_devis,
+      id_client: devis.id_client,
+      date_devis: devis.date_devis?.split('T')[0],
+      date_validite: devis.date_validite?.split('T')[0] || '',
+      statut: devis.statut,
+      notes: devis.notes || ''
+    });
+    
+    console.log('🔵 FormData défini:', {
+      numero_devis: devis.numero_devis,
+      id_client: devis.id_client,
+      date_devis: devis.date_devis?.split('T')[0]
+    });
+    
+    // Charger les lignes du devis
+    try {
+      console.log('🔵 Chargement des lignes du devis ID:', devis.id_devis);
+      const response = await api.get(`/ tomar`/devis/${devis.id_devis}/lignes`);
+      
+      console.log('✅ Lignes chargées:', response.data);
+      setLignesDevis(response.data);
+    } catch (error) {
+      console.error('❌ Erreur chargement lignes:', error);
+      console.error('❌ Status:', error.response?.status);
+      console.error('❌ Data:', error.response?.data);
+      console.error('❌ Message:', error.message);
+      showError('Erreur lors du chargement des lignes du devis: ' + (error.response?.data?.detail || error.message));
+    }
+    
+    console.log('🔵 Ouverture du formulaire');
+    setFormulaireOuvert(true);
+  };
+
   const fermerFormulaire = () => {
     setFormulaireOuvert(false);
     setDevisSelectionne(null);
@@ -194,7 +254,7 @@ const Devis = () => {
 
   const enregistrerDevis = async () => {
     if (!formData.id_client || lignesDevis.length === 0) {
-      alert('Veuillez sélectionner un client et ajouter au moins un article');
+      showError('Veuillez sélectionner un client et ajouter au moins un article');
       return;
     }
 
@@ -207,63 +267,52 @@ const Devis = () => {
     };
 
     try {
-      const token = localStorage.getItem('token');
-      
       if (devisSelectionne) {
-        await axios.put(
-          `http://localhost:8000/api/devis/${devisSelectionne.id_devis}`,
-          devisData,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        alert('Devis modifié avec succès');
+        await api.put(`/api/devis/${devisSelectionne.id_devis}`, devisData);
+        showSuccess('Devis modifié avec succès');
       } else {
-        await axios.post(
-          'http://localhost:8000/api/devis',
-          devisData,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        alert('Devis créé avec succès');
+        await api.post('/api/devis', devisData);
+        showSuccess('Devis créé avec succès');
       }
 
       fermerFormulaire();
       chargerDevis();
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de l\'enregistrement du devis');
+      showError('Erreur lors de l\'enregistrement du devis');
     }
   };
 
-  const supprimerDevis = async (idDevis) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce devis ?')) return;
+  const่าอrmerDevis = async (idDevis) => {
+    const confirmed = await confirmDelete('ce devis');
+    if (!confirmed) return;
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:8000/api/devis/${idDevis}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      alert('Devis supprimé');
+      await api.delete(`/api/devis/${idDevis}`);
+      showSuccess('Devis supprimé');
       chargerDevis();
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de la suppression');
+      showError('Erreur lors de la suppression');
     }
   };
 
   const transformerEnFacture = async (idDevis) => {
-    if (!window.confirm('Transformer ce devis en facture ?')) return;
+    const confirmed = await confirmAction(
+      'Transformer en facture ?',
+      'Une facture sera créée à partir de ce devis.',
+      'Transformer',
+      'question'
+    );
+    if (!confirmed) return;
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.post(
-        `http://localhost:8000/api/devis/${idDevis}/transformer-facture`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      alert('Devis transformé en facture avec succès !');
+      await api.put(`/api/devis/${idDevis}/valider`);
+      showSuccess('Devis transformé en facture avec succès !');
       chargerDevis();
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de la transformation');
+      showError('Erreur lors de la transformation');
     }
   };
 
@@ -288,7 +337,7 @@ const Devis = () => {
           onChange={(e) => setSearchText(e.target.value)}
         />
         <button className="btn-icon" onClick={chargerDevis}>🔍</button>
-        <button className="btn-success" onClick={ouvrirFormulaireNouveau}>
+        Hyundai.btn-success" onClick={ouvrirFormulaireNouveau}>
           + Nouveau Devis
         </button>
         <button className="btn-primary" onClick={chargerDevis}>
@@ -354,6 +403,9 @@ const Devis = () => {
                     <td><span className={`status-badge ${statutClass}`}>{d.statut}</span></td>
                     <td><strong>{parseFloat(d.total_ttc || 0).toLocaleString()} FCFA</strong></td>
                     <td>
+                      <button className="btn-icon" onClick={() => ouvrirFormulaireModification(d)} title="Modifier">
+                        ✏️
+                      </button>
                       <button className="btn-icon" onClick={() => transformerEnFacture(d.id_devis)} title="Transformer en facture">
                         🔄
                       </button>
@@ -401,23 +453,34 @@ const Devis = () => {
               <div className="form-row">
                 <div className="form-group">
                   <label>Client *</label>
-                  <select
-                    value={formData.id_client}
-                    onChange={(e) => setFormData({...formData, id_client: e.target.value})}
-                  >
-                    <option value="">Sélectionner un client</option>
-                    {clients.map(client => (
-                      <option key={client.id_client} value={client.id_client}>
-                        {client.nom}
-                      </option>
-                    ))}
-                  </select>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <select
+                      value={formData.id_client}
+                      onChange={(e) => setFormData({...formData, id_client: e.target.value})}
+                      style={{ flex: 1 }}
+                    >
+                      <option value="">Sélectionner un client</option>
+                      {clients.map(client => (
+                        <option key={client.id_client} value={client.id_client}>
+                          {client.nom}
+                        </option>
+                      ))}
+                    </select>
+                    <button 
+                      type="button" 
+                      className="btn btn-secondary"
+                      onClick={handleNouveauClient}
+                      style={{ whiteSpace: 'nowrap' }}
+                    >
+                      + Nouveau
+                    </button>
+                  </div>
                 </div>
                 <div className="form-group">
                   <label>Statut</label>
                   <select
                     value={formData.statut}
-                    onChange={(e) => setFormData({...formData, statut: e.target.value})}
+                    onChange={(这一步) => setFormData({...formData, statut: e.target.value})}
                   >
                     <option value="Brouillon">Brouillon</option>
                     <option value="En attente">En attente</option>
@@ -437,7 +500,7 @@ const Devis = () => {
                   >
                     <option value="">Sélectionner un article</option>
                     {articles.map(article => (
-                      <option key={article.id_article} value={article.id_article}>
+                      <option key={article.id_而出e} value={article.id_article}>
                         {article.designation} - {article.prix_vente} FCFA
                       </option>
                     ))}
@@ -529,7 +592,8 @@ const Devis = () => {
 
             <div className="modal-footer">
               <button className="btn-success" onClick={enregistrerDevis}>
-                💾 Enregistrer
+                💾 Enregist-Q
+
               </button>
               <button className="btn-primary" onClick={fermerFormulaire}>
                 Annuler
@@ -537,6 +601,14 @@ const Devis = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal nouveau client */}
+      {showClientModal && (
+        <ClientForm
+          onClose={() => setShowClientModal(false)}
+          onSuccess={handleClientCreated}
+        />
       )}
     </div>
   );

@@ -20,14 +20,14 @@
 .configuration-title {
   font-size: 32px;
   font-weight: bold;
-  color: #3B82F6;
+  color: var(--texte-principal);
   margin: 0;
   margin-bottom: 10px;
 }
 
 .configuration-subtitle {
   font-size: 16px;
-  color: #94A3B8;
+  color: var(--texte-secondaire);
   margin: 0;
 }
 
@@ -36,8 +36,8 @@
    ============================================ */
 
 .configuration-form {
-  background-color: #1E293B;
-  border: 1px solid #334155;
+  background-color: var(--bg-secondaire);
+  border: 1px solid var(--bordure);
   border-radius: 12px;
   padding: 30px;
 }
@@ -53,10 +53,10 @@
 .section-title {
   font-size: 18px;
   font-weight: bold;
-  color: #ffffff;
+  color: var(--texte-principal);
   margin: 0 0 20px 0;
   padding-bottom: 10px;
-  border-bottom: 2px solid #334155;
+  border-bottom: 2px solid var(--bordure);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -74,7 +74,7 @@
 }
 
 .form-group label {
-  color: #ffffff;
+  color: var(--texte-principal);
   font-size: 14px;
   font-weight: 500;
   margin-bottom: 8px;
@@ -82,22 +82,22 @@
 
 .form-control {
   padding: 12px 15px;
-  background-color: #0F172A;
-  border: 1px solid #334155;
+  background-color: var(--bg-tertiaire);
+  border: 1px solid var(--bordure);
   border-radius: 8px;
-  color: #ffffff;
+  color: var(--texte-principal);
   font-size: 14px;
   transition: all 0.2s;
 }
 
 .form-control:focus {
   outline: none;
-  border-color: #3B82F6;
+  border-color: var(--bordure-focus);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .form-control::placeholder {
-  color: #94A3B8;
+  color: var(--texte-secondaire);
 }
 
 select.form-control {
@@ -118,13 +118,13 @@ select.form-control {
 .logo-preview {
   width: 150px;
   height: 150px;
-  border: 2px dashed #334155;
+  border: 2px dashed var(--bordure);
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background-color: #0F172A;
+  background-color: var(--bg-tertiaire);
 }
 
 .logo-preview img {
@@ -141,7 +141,7 @@ select.form-control {
 
 .help-text {
   font-size: 12px;
-  color: #94A3B8;
+  color: var(--texte-secondaire);
   margin: 0;
 }
 
@@ -155,7 +155,7 @@ select.form-control {
   gap: 15px;
   margin-top: 30px;
   padding-top: 30px;
-  border-top: 2px solid #334155;
+  border-top: 2px solid var(--bordure);
 }
 
 .btn {
@@ -177,30 +177,33 @@ select.form-control {
 }
 
 .btn-success {
-  background-color: #10B981;
-  color: white;
+  background-color: transparent;
+  border: 2px solid var(--bordure);
+  color: var(--texte-principal);
 }
 
 .btn-success:hover {
-  background-color: #059669;
+  background-color: var(--hover);
 }
 
 .btn-secondary {
-  background-color: #6B7280;
-  color: white;
+  background-color: transparent;
+  border: 2px solid var(--bordure);
+  color: var(--texte-secondaire);
 }
 
 .btn-secondary:hover {
-  background-color: #4B5563;
+  background-color: var(--hover);
 }
 
 .btn-primary {
-  background-color: #3B82F6;
-  color: white;
+  background-color: transparent;
+  border: 2px solid var(--bordure);
+  color: var(--texte-principal);
 }
 
 .btn-primary:hover {
-  background-color: #2563EB;
+  background-color: var(--hover);
 }
 
 /* ============================================
@@ -213,7 +216,7 @@ select.form-control {
   justify-content: center;
   min-height: 400px;
   font-size: 16px;
-  color: #94A3B8;
+  color: var(--texte-secondaire);
 }
 
 /* ============================================

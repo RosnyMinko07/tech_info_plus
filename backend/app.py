@@ -9,7 +9,9 @@ from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import sys
@@ -26,7 +28,7 @@ from database_mysql import get_db, test_connection, create_tables
 from database_mysql import (
     Client, Article, Facture, Devis, Reglement, Avoir, LigneAvoir,
     Utilisateur, Fournisseur, Entreprise, MouvementStock,
-    LigneFacture, LigneDevis, SignalementBug
+    LigneFacture, LigneDevis, SignalementBug, VenteComptoir, LigneVente
 )
 
 # Importer les routes des modules (avec try/except pour éviter les erreurs)
@@ -34,9 +36,30 @@ try:
     from api.comptoir_routes import router as comptoir_router
     routes_imported = True
 except ImportError as e:
-    print(f"⚠️ Erreur import routes: {e}")
-    print("⚠️ Les routes Comptoir ne seront pas disponibles")
+    print(f"[WARNING] Erreur import routes: {e}")
+    print("[WARNING] Les routes Comptoir ne seront pas disponibles")
     routes_imported = False
+
+# ==================== UTILITAIRES ====================
+
+def get_current_user_id(request: Request) -> int:
+    """Extraire l'ID utilisateur du token JWT"""
+    try:
+        auth_header = request.headers.get('Authorization')
+        if auth_header and auth_header.startswith('Bearer '):
+            token = auth_header.replace('Bearer ', '')
+            # Extraire l'ID utilisateur du token (format: token_{id}_{timestamp})
+            parts = token.split('_')
+            if len(parts) >= 2:
+                id_utilisateur = int(parts[1])
+                print(f"  🔑 ID utilisateur extrait du token: {id_utilisateur}")
+                return id_utilisateur
+    except (ValueError, IndexError) as e:
+        print(f"   ⚠️ Erreur extraction ID utilisateur: {e}")
+    
+    # Retourner 1 (admin) par défaut si le token est invalide
+    print(f"  ⚠️ Utilisation de l'utilisateur par défaut (ID: 1)")
+    return 1
 
 # Modèles Pydantic pour l'API
 class ClientCreate(BaseModel):
@@ -243,12 +266,7 @@ app = FastAPI(
 # Configuration CORS pour React
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "https://*.vercel.app",  # ✅ Tous les domaines Vercel (production + previews)
-        "https://*.up.railway.app",  # ✅ Tous les domaines Railway
-    ],
+    allow_origins=["*"],  # 🔥 Autoriser TOUTES les origines pour accès réseau local
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -260,7 +278,33 @@ security = HTTPBearer()
 # Enregistrer les routers (si importés avec succès)
 if routes_imported:
     app.include_router(comptoir_router)
-    print("✅ Routes Comptoir chargées")
+    print("[OK] Routes Comptoir chargees")
+
+# -- Servir le frontend build (si présent) pour produire une application "tout-en-un" --
+try:
+    # Chemin attendu du build créé par `npm run build` (frontend/build)
+    frontend_build_path = os.path.normpath(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "build")
+    )
+
+    if os.path.isdir(frontend_build_path):
+        # Monter les fichiers statiques (l'API garde la priorité sur les routes)
+        app.mount("/", StaticFiles(directory=frontend_build_path, html=True), name="frontend")
+        print(f"[OK] Frontend statique monte depuis: {frontend_build_path}")
+
+        # Fallback SPA: servir index.html pour les routes non-API (utile quand le build existe)
+        index_file = os.path.join(frontend_build_path, "index.html")
+
+        if os.path.exists(index_file):
+            @app.get("/{full_path:path}", include_in_schema=False)
+            async def spa_catchall(request: Request, full_path: str):
+                # Laisser passer les appels aux routes d'API/doc
+                if request.url.path.startswith("/api") or request.url.path.startswith("/docs") or request.url.path.startswith("/redoc"):
+                    raise HTTPException(status_code=404)
+                return FileResponse(index_file)
+except Exception as _e:
+    # Ne doit pas empêcher l'application de démarrer si quelque chose échoue
+    print(f"[WARNING] Impossible de monter le frontend statique: {_e}")
 
 # Routes principales
 @app.get("/")
@@ -357,13 +401,50 @@ async def get_clients(skip: int = 0, limit: int = 100, db: Session = Depends(get
     clients = db.query(Client).offset(skip).limit(limit).all()
     return clients
 
-@app.get("/api/clients/{client_id}", response_model=ClientResponse)
+@app.get("/api/clients/{client_id}")
 async def get_client(client_id: int, db: Session = Depends(get_db)):
     """Récupérer un client par ID"""
-    client = db.query(Client).filter(Client.id_client == client_id).first()
-    if not client:
-        raise HTTPException(status_code=404, detail="Client non trouvé")
-    return client
+    try:
+        client = db.query(Client).filter(Client.id_client == client_id).first()
+        if not client:
+            raise HTTPException(status_code=404, detail="Client non trouvé")
+        
+        # Ajouter des statistiques du client
+        factures_count = db.query(Facture).filter(Facture.id_client == client_id).count()
+        devis_count = db.query(Devis).filter(Devis.id_client == client_id).count()
+        
+        # Calculer le CA total du client
+        ca_total = db.query(func.sum(Facture.montant_avance)).filter(
+            Facture.id_client == client_id,
+            Facture.statut != 'Annulée'
+        ).scalar() or 0
+        
+        # Dernière facture
+        derniere_facture = db.query(Facture).filter(
+            Facture.id_client == client_id
+        ).order_by(Facture.date_facture.desc()).first()
+        
+        return {
+            "id_client": client.id_client,
+            "nom": client.nom,
+            "adresse": client.adresse,
+            "telephone": client.telephone,
+            "email": client.email,
+            "nif": client.nif,
+            "type_client": client.type_client,
+            "date_creation": client.created_at,
+            "statistiques": {
+                "nb_factures": factures_count,
+                "nb_devis": devis_count,
+                "ca_total": float(ca_total),
+                "derniere_facture": derniere_facture.date_facture if derniere_facture else None
+            }
+        }
+    except Exception as e:
+        print(f"Erreur get_client: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
 
 @app.post("/api/clients", response_model=ClientResponse)
 async def create_client(client: ClientCreate, db: Session = Depends(get_db)):
@@ -372,7 +453,8 @@ async def create_client(client: ClientCreate, db: Session = Depends(get_db)):
     if not client.numero_client:
         last_client = db.query(Client).order_by(Client.id_client.desc()).first()
         next_num = (last_client.id_client + 1) if last_client else 1
-        client.numero_client = f"CLI-{next_num:04d}"
+        year = datetime.now().year
+        client.numero_client = f"CLI-{year}-{next_num:03d}"
     
     db_client = Client(**client.dict())
     db.add(db_client)
@@ -380,30 +462,83 @@ async def create_client(client: ClientCreate, db: Session = Depends(get_db)):
     db.refresh(db_client)
     return db_client
 
-@app.put("/api/clients/{client_id}", response_model=ClientResponse)
-async def update_client(client_id: int, client: ClientCreate, db: Session = Depends(get_db)):
+@app.put("/api/clients/{client_id}")
+async def update_client(client_id: int, data: dict, db: Session = Depends(get_db)):
     """Mettre à jour un client"""
-    db_client = db.query(Client).filter(Client.id_client == client_id).first()
-    if not db_client:
-        raise HTTPException(status_code=404, detail="Client non trouvé")
-    
-    for key, value in client.dict().items():
-        setattr(db_client, key, value)
-    
-    db.commit()
-    db.refresh(db_client)
-    return db_client
+    try:
+        print(f"🔍 DEBUG - Modification client {client_id}: {data}")
+        
+        db_client = db.query(Client).filter(Client.id_client == client_id).first()
+        if not db_client:
+            raise HTTPException(status_code=404, detail="Client non trouvé")
+        
+        # Mettre à jour les champs
+        for key, value in data.items():
+            if hasattr(db_client, key) and value is not None:
+                setattr(db_client, key, value)
+        
+        db.commit()
+        db.refresh(db_client)
+        
+        print(f"  Client {db_client.nom} modifié avec succès!")
+        return db_client
+    except Exception as e:
+        db.rollback()
+        print(f"  ERREUR modification client: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
 
 @app.delete("/api/clients/{client_id}")
-async def delete_client(client_id: int, db: Session = Depends(get_db)):
+async def delete_client(client_id: int, force: bool = False, db: Session = Depends(get_db)):
     """Supprimer un client"""
-    db_client = db.query(Client).filter(Client.id_client == client_id).first()
-    if not db_client:
-        raise HTTPException(status_code=404, detail="Client non trouvé")
-    
-    db.delete(db_client)
-    db.commit()
-    return {"message": "Client supprimé avec succès"}
+    try:
+        db_client = db.query(Client).filter(Client.id_client == client_id).first()
+        if not db_client:
+            raise HTTPException(status_code=404, detail="Client non trouvé")
+        
+        # Vérifier s'il y a des factures ou devis liés
+        factures_count = db.query(Facture).filter(Facture.id_client == client_id).count()
+        devis_count = db.query(Devis).filter(Devis.id_client == client_id).count()
+        
+        if factures_count > 0 or devis_count > 0:
+            if force:
+                # Supprimer les documents liés d'abord
+                print(f"Suppression forcée: {factures_count} factures et {devis_count} devis")
+                
+                # Supprimer les lignes de factures liées
+                factures_client = db.query(Facture).filter(Facture.id_client == client_id).all()
+                for facture in factures_client:
+                    db.query(LigneFacture).filter(LigneFacture.id_facture == facture.id_facture).delete()
+                
+                # Supprimer les factures
+                db.query(Facture).filter(Facture.id_client == client_id).delete()
+                
+                # Supprimer les lignes de devis liées
+                devis_client = db.query(Devis).filter(Devis.id_client == client_id).all()
+                for devis in devis_client:
+                    db.query(LigneDevis).filter(LigneDevis.id_devis == devis.id_devis).delete()
+                
+                # Supprimer les devis
+                db.query(Devis).filter(Devis.id_client == client_id).delete()
+                
+                print(f"Documents supprimés: {factures_count} factures et {devis_count} devis")
+            else:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Impossible de supprimer ce client car il a {factures_count} facture(s) et {devis_count} devis. Supprimez d'abord les documents liés ou utilisez l'option 'Supprimer définitivement'."
+                )
+        
+        db.delete(db_client)
+        db.commit()
+        return {"message": "Client supprimé avec succès"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Erreur suppression client: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
 
 # ==================== ARTICLES ====================
 
@@ -437,13 +572,58 @@ async def get_articles(skip: int = 0, limit: int = 100, inclure_inactifs: bool =
         traceback.print_exc()
         return []
 
-@app.get("/api/articles/{article_id}", response_model=ArticleResponse)
+@app.get("/api/articles/{article_id}")
 async def get_article(article_id: int, db: Session = Depends(get_db)):
-    """Récupérer un article par ID"""
-    article = db.query(Article).filter(Article.id_article == article_id).first()
-    if not article:
-        raise HTTPException(status_code=404, detail="Article non trouvé")
-    return article
+    """Récupérer un article par ID avec statistiques"""
+    try:
+        article = db.query(Article).filter(Article.id_article == article_id).first()
+        if not article:
+            raise HTTPException(status_code=404, detail="Article non trouvé")
+        
+        # Ajouter des statistiques de l'article
+        # Nombre de ventes (lignes de factures)
+        ventes_count = db.query(LigneFacture).filter(LigneFacture.id_article == article_id).count()
+        
+        # Quantité totale vendue
+        quantite_vendue = db.query(func.sum(LigneFacture.quantite)).filter(
+            LigneFacture.id_article == article_id
+        ).scalar() or 0
+        
+        # Chiffre d'affaires généré par cet article
+        ca_article = db.query(func.sum(LigneFacture.total_ht)).filter(
+            LigneFacture.id_article == article_id
+        ).scalar() or 0
+        
+        # Dernière vente
+        derniere_vente = db.query(LigneFacture).join(Facture).filter(
+            LigneFacture.id_article == article_id
+        ).order_by(Facture.date_facture.desc()).first()
+        
+        return {
+            "id_article": article.id_article,
+            "code_article": article.code_article,
+            "designation": article.designation,
+            "description": article.description,
+            "prix_achat": float(article.prix_achat),
+            "prix_vente": float(article.prix_vente),
+            "stock_actuel": article.stock_actuel,
+            "stock_minimum": article.stock_alerte,
+            "type_article": article.type_article,
+            "image_url": article.image_path,
+            "id_fournisseur": article.id_fournisseur,
+            "created_at": article.created_at,
+            "statistiques": {
+                "nb_ventes": ventes_count,
+                "quantite_vendue": int(quantite_vendue),
+                "ca_genere": float(ca_article),
+                "derniere_vente": derniere_vente.facture.date_facture if derniere_vente else None
+            }
+        }
+    except Exception as e:
+        print(f"Erreur get_article: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
 
 @app.post("/api/articles")
 async def create_article(article: ArticleCreate, db: Session = Depends(get_db)):
@@ -468,15 +648,17 @@ async def create_article(article: ArticleCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=f"Erreur lors de la création: {str(e)}")
 
 @app.put("/api/articles/{article_id}")
-async def update_article(article_id: int, article: ArticleCreate, db: Session = Depends(get_db)):
+async def update_article(article_id: int, data: dict, db: Session = Depends(get_db)):
     """Mettre à jour un article"""
     try:
+        print(f"🔍 DEBUG - Modification article {article_id}: {data}")
         db_article = db.query(Article).filter(Article.id_article == article_id).first()
         if not db_article:
             raise HTTPException(status_code=404, detail="Article non trouvé")
         
-        for key, value in article.dict().items():
-            if value is not None or key in ['id_fournisseur']:  # Permettre NULL pour id_fournisseur
+        # Mettre à jour les champs
+        for key, value in data.items():
+            if hasattr(db_article, key) and (value is not None or key in ['id_fournisseur']):
                 setattr(db_article, key, value)
         
         db.commit()
@@ -618,6 +800,11 @@ async def get_factures(
         result = []
         for facture in factures:
             client = db.query(Client).filter(Client.id_client == facture.id_client).first()
+            # Récupérer l'utilisateur créateur
+            utilisateur = None
+            if facture.id_utilisateur:
+                utilisateur = db.query(Utilisateur).filter(Utilisateur.id_utilisateur == facture.id_utilisateur).first()
+            
             result.append({
                 "id_facture": facture.id_facture,
                 "numero_facture": facture.numero_facture,
@@ -636,7 +823,8 @@ async def get_factures(
                 "notes": facture.notes,
                 "created_at": facture.created_at.isoformat() if facture.created_at else None,
                 "client_nom": client.nom if client else "N/A",
-                "client_telephone": client.telephone if client else ""
+                "client_telephone": client.telephone if client else "",
+                "cree_par": utilisateur.nom_utilisateur if utilisateur else "Système"  # 🔥 Nom du créateur
             })
         return result
     except Exception as e:
@@ -707,7 +895,8 @@ async def get_lignes_facture(facture_id: int, db: Session = Depends(get_db)):
                     "code_article": article.code_article,
                     "quantite": ligne_facture.quantite,
                     "prix_unitaire": float(ligne_facture.prix_unitaire or 0),
-                    "montant_ht": float(ligne_facture.montant_ht or 0)
+                    "montant_ht": float(ligne_facture.montant_ht or 0),
+                    "type_article": article.type_article  # Ajouter le type d'article
                 })
         
         return lignes_formatees
@@ -715,7 +904,7 @@ async def get_lignes_facture(facture_id: int, db: Session = Depends(get_db)):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ ERREUR récupération lignes facture: {e}")
+        print(f"  ERREUR récupération lignes facture: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
@@ -727,31 +916,43 @@ class LigneFactureCreate(BaseModel):
     montant_ht: float
 
 @app.post("/api/factures")
-async def create_facture(data: dict, db: Session = Depends(get_db)):
+async def create_facture(data: dict, request: Request, db: Session = Depends(get_db)):
     """Créer une nouvelle facture - EXACTEMENT comme Python ligne 1544-1579"""
     try:
+        # Récupérer l'ID utilisateur connecté
+        id_utilisateur = get_current_user_id(request)
+        print(f"  🔑 Facture créée par l'utilisateur ID: {id_utilisateur}")
         print(f"🔍 DEBUG - Données reçues: {data}")
         
         # Générer un numéro de facture automatique
         last_facture = db.query(Facture).order_by(Facture.id_facture.desc()).first()
         next_num = (last_facture.id_facture + 1) if last_facture else 1
-        numero_facture = f"FAC-{next_num:04d}"
+        year = datetime.now().year
+        numero_facture = f"FAC-{year}-{next_num:03d}"
         
         # Extraire les données EXACTEMENT comme Python
         id_client = data.get('id_client')
         date_facture = data.get('date_facture')
         montant_ht = float(data.get('montant_ht', 0))
         montant_ttc = float(data.get('montant_ttc', 0))
-        statut = data.get('statut', 'En attente')
-        id_devis = data.get('id_devis')
         montant_avance = float(data.get('montant_avance', 0))
         montant_reste = float(data.get('montant_reste', 0))
+        
+        # 🔥 Déterminer le statut automatiquement selon le montant payé
+        if montant_avance >= montant_ttc and montant_ttc > 0:
+            statut = "Payée"
+        elif montant_avance > 0:
+            statut = "Partiellement payée"
+        else:
+            statut = data.get('statut', 'En attente')
+        
+        id_devis = data.get('id_devis')
         description = data.get('description', '')
         precompte_applique = 1 if data.get('precompte_actif') else 0
         type_facture = data.get('type_facture', 'NORMALE')
         lignes = data.get('lignes', [])
         
-        print(f"✅ Numéro: {numero_facture}, Client: {id_client}, Montant TTC: {montant_ttc}")
+        print(f"  Numéro: {numero_facture}, Client: {id_client}, Montant TTC: {montant_ttc}")
         
         # Créer la facture EXACTEMENT comme Python (ligne 1544-1547)
         db_facture = Facture(
@@ -761,6 +962,7 @@ async def create_facture(data: dict, db: Session = Depends(get_db)):
             total_ttc=montant_ttc,
             statut=statut,
             id_client=id_client,
+            id_utilisateur=id_utilisateur,  # 🔥 ID de l'utilisateur connecté
             id_devis=id_devis,
             montant_avance=montant_avance,
             montant_reste=montant_reste,
@@ -771,7 +973,7 @@ async def create_facture(data: dict, db: Session = Depends(get_db)):
         db.add(db_facture)
         db.flush()
         
-        print(f"✅ Facture créée avec ID: {db_facture.id_facture}")
+        print(f"  Facture créée avec ID: {db_facture.id_facture}")
         
         # Sauvegarder les lignes EXACTEMENT comme Python (ligne 1560-1579)
         for ligne in lignes:
@@ -780,12 +982,31 @@ async def create_facture(data: dict, db: Session = Depends(get_db)):
             prix_unitaire = ligne['prix_unitaire']
             montant_ht_ligne = quantite * prix_unitaire
             
-            # Appliquer précompte si actif
+            # Récupérer l'article pour vérifier le stock
+            article = db.query(Article).filter(Article.id_article == id_article).first()
+            
+            # 🔥 VÉRIFICATION DE STOCK pour les produits
+            if article and article.type_article == 'PRODUIT':
+                # Vérifier que le stock est suffisant
+                if quantite > article.stock_actuel:
+                    raise HTTPException(
+                        status_code=400, 
+                        detail=f"❌ Stock insuffisant pour '{article.designation}'. Stock disponible: {article.stock_actuel}, Quantité demandée: {quantite}"
+                    )
+                
+                # Vérifier que le stock n'est pas à zéro
+                if article.stock_actuel <= 0:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"❌ Stock épuisé pour '{article.designation}'. Impossible de créer une facture pour un article en rupture de stock."
+                    )
+            
+            # Appliquer précompte si actif ET que c'est un SERVICE
+            montant_ttc_ligne = montant_ht_ligne
             if precompte_applique:
-                precompte = montant_ht_ligne * 0.095
-                montant_ttc_ligne = montant_ht_ligne - precompte
-            else:
-                montant_ttc_ligne = montant_ht_ligne
+                if article and article.type_article == 'SERVICE':
+                    precompte = montant_ht_ligne * 0.095
+                    montant_ttc_ligne = montant_ht_ligne - precompte
             
             db_ligne = LigneFacture(
                 quantite=quantite,
@@ -797,7 +1018,7 @@ async def create_facture(data: dict, db: Session = Depends(get_db)):
             )
             db.add(db_ligne)
         
-        print(f"✅ {len(lignes)} lignes ajoutées")
+        print(f"  {len(lignes)} lignes ajoutées")
         
         # Décrémenter le stock si payé (comme Python ligne 1581-1599)
         if montant_avance > 0:
@@ -814,12 +1035,12 @@ async def create_facture(data: dict, db: Session = Depends(get_db)):
                         reference=f"Facture {numero_facture}"
                     )
                     db.add(mouvement)
-            print(f"✅ Stock décrémenté pour {len(lignes)} articles")
+            print(f"  Stock décrémenté pour {len(lignes)} articles")
         
         db.commit()
         db.refresh(db_facture)
         
-        print(f"✅ Facture {numero_facture} enregistrée avec succès!")
+        print(f"  Facture {numero_facture} enregistrée avec succès!")
         
         # Retourner avec infos client
         client = db.query(Client).filter(Client.id_client == id_client).first()
@@ -840,10 +1061,153 @@ async def create_facture(data: dict, db: Session = Depends(get_db)):
         }
     except Exception as e:
         db.rollback()
-        print(f"❌ ERREUR création facture: {e}")
+        print(f"  ERREUR création facture: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
+
+@app.put("/api/factures/{facture_id}")
+async def update_facture(facture_id: int, data: dict, db: Session = Depends(get_db)):
+    """Modifier une facture existante"""
+    try:
+        print(f"🔍 DEBUG - Modification facture {facture_id}")
+        print(f"🔍 DEBUG - Données reçues: {data}")
+        
+        # Récupérer la facture
+        facture = db.query(Facture).filter(Facture.id_facture == facture_id).first()
+        if not facture:
+            raise HTTPException(status_code=404, detail="Facture non trouvée")
+        
+        print(f"🔍 DEBUG - Facture trouvée: {facture.numero_facture}")
+        
+        # Mettre à jour les champs un par un avec gestion d'erreurs
+        try:
+            facture.numero_facture = data.get('numero_facture', facture.numero_facture)
+            facture.id_client = data.get('id_client', facture.id_client)
+            facture.date_facture = data.get('date_facture', facture.date_facture)
+            facture.total_ht = float(data.get('montant_ht', data.get('total_ht', facture.total_ht)))
+            facture.total_tva = float(data.get('montant_tva', data.get('total_tva', facture.total_tva if hasattr(facture, 'total_tva') else 0)))
+            facture.total_ttc = float(data.get('montant_ttc', data.get('total_ttc', facture.total_ttc)))
+            facture.statut = data.get('statut', facture.statut)
+            facture.montant_avance = float(data.get('montant_avance', facture.montant_avance))
+            facture.montant_reste = float(data.get('montant_reste', facture.montant_reste))
+            
+            # Gérer description et notes (peuvent être interchangeables)
+            if 'description' in data:
+                facture.description = data['description']
+            if 'notes' in data:
+                facture.notes = data['notes']
+            
+            facture.precompte_applique = 1 if data.get('precompte_actif') else 0
+            facture.type_facture = data.get('type_facture', facture.type_facture)
+            
+            print(f"  DEBUG - Champs mis à jour avec succès")
+        except Exception as e:
+            print(f"  DEBUG - Erreur lors de la mise à jour des champs: {e}")
+            raise
+        
+        # Supprimer les anciennes lignes
+        db.query(LigneFacture).filter(LigneFacture.id_facture == facture_id).delete()
+        
+        # Ajouter les nouvelles lignes
+        lignes = data.get('lignes', [])
+        for ligne in lignes:
+            db_ligne = LigneFacture(
+                quantite=ligne['quantite'],
+                prix_unitaire=ligne['prix_unitaire'],
+                montant_ht=ligne['quantite'] * ligne['prix_unitaire'],
+                total_ht=ligne['quantite'] * ligne['prix_unitaire'],
+                id_facture=facture_id,
+                id_article=ligne['id_article']
+            )
+            db.add(db_ligne)
+        
+        db.commit()
+        db.refresh(facture)
+        
+        print(f"  Facture {facture.numero_facture} modifiée avec succès!")
+        
+        # Retourner avec infos client
+        client = db.query(Client).filter(Client.id_client == facture.id_client).first()
+        return {
+            "id_facture": facture.id_facture,
+            "numero_facture": facture.numero_facture,
+            "type_facture": facture.type_facture,
+            "id_client": facture.id_client,
+            "date_facture": str(facture.date_facture),
+            "montant_ht": float(facture.total_ht),
+            "montant_ttc": float(facture.total_ttc),
+            "montant_avance": float(facture.montant_avance),
+            "montant_reste": float(facture.montant_reste),
+            "description": facture.description,
+            "precompte_applique": facture.precompte_applique,
+            "statut": facture.statut,
+            "client_nom": client.nom if client else "N/A"
+        }
+    except Exception as e:
+        db.rollback()
+        print(f"  ERREUR modification facture: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
+
+@app.put("/api/factures/{facture_id}/annuler")
+async def annuler_facture(facture_id: int, db: Session = Depends(get_db)):
+    """Annuler une facture (marquer comme Annulée au lieu de supprimer)"""
+    try:
+        # Récupérer la facture
+        facture = db.query(Facture).filter(Facture.id_facture == facture_id).first()
+        if not facture:
+            raise HTTPException(status_code=404, detail="Facture non trouvée")
+        
+        # Vérifier si déjà annulée
+        if facture.statut == 'Annulée':
+            raise HTTPException(status_code=400, detail="Cette facture est déjà annulée")
+        
+        numero_facture = facture.numero_facture
+        
+        # Récupérer les lignes de facture pour restaurer le stock
+        lignes = db.query(LigneFacture, Article).join(
+            Article, LigneFacture.id_article == Article.id_article, isouter=True
+        ).filter(
+            LigneFacture.id_facture == facture_id
+        ).all()
+        
+        # Restaurer le stock pour chaque article
+        for ligne_facture, article in lignes:
+            if article and article.type_article == "PRODUIT":
+                # Remettre en stock
+                article.stock_actuel = (article.stock_actuel or 0) + ligne_facture.quantite
+                
+                # Créer un mouvement de stock (ENTREE)
+                mouvement = MouvementStock(
+                    id_article=ligne_facture.id_article,
+                    type_mouvement="ENTREE",
+                    quantite=ligne_facture.quantite,
+                    date_mouvement=datetime.now(),
+                    reference=f"Annulation {numero_facture}"
+                )
+                db.add(mouvement)
+        
+        # Marquer la facture comme annulée
+        facture.statut = 'Annulée'
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": f"Facture {numero_facture} annulée avec succès",
+            "articles_remis_en_stock": len(lignes)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"  ERREUR annulation facture: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erreur lors de l'annulation : {str(e)}")
 
 @app.delete("/api/factures/{facture_id}")
 async def delete_facture(facture_id: int, db: Session = Depends(get_db)):
@@ -900,7 +1264,7 @@ async def delete_facture(facture_id: int, db: Session = Depends(get_db)):
         raise
     except Exception as e:
         db.rollback()
-        print(f"❌ ERREUR suppression facture: {e}")
+        print(f"  ERREUR suppression facture: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Erreur lors de la suppression : {str(e)}")
@@ -921,6 +1285,11 @@ async def get_devis(skip: int = 0, limit: int = 100, db: Session = Depends(get_d
             # Vérifier si le devis est facturé
             facture = db.query(Facture).filter(Facture.id_devis == devis.id_devis).first()
             
+            # Récupérer l'utilisateur créateur
+            utilisateur = None
+            if devis.id_utilisateur:
+                utilisateur = db.query(Utilisateur).filter(Utilisateur.id_utilisateur == devis.id_utilisateur).first()
+            
             devis_dict = {
                 "id_devis": devis.id_devis,
                 "numero_devis": devis.numero_devis,
@@ -937,7 +1306,8 @@ async def get_devis(skip: int = 0, limit: int = 100, db: Session = Depends(get_d
                 "client_nom": client.nom if client else "N/A",
                 "facture_numero": facture.numero_facture if facture else None,
                 "id_facture": facture.id_facture if facture else None,
-                "created_at": devis.created_at
+                "created_at": devis.created_at,
+                "cree_par": utilisateur.nom_utilisateur if utilisateur else "Système"  # 🔥 Nom du créateur
             }
             result.append(devis_dict)
         
@@ -949,7 +1319,7 @@ async def get_devis(skip: int = 0, limit: int = 100, db: Session = Depends(get_d
         return []
 
 @app.post("/api/devis", response_model=DevisResponse)
-async def create_devis(devis: DevisCreate, db: Session = Depends(get_db)):
+async def create_devis(devis: DevisCreate, request: Request, db: Session = Depends(get_db)):
     """Créer un nouveau devis"""
     print("=" * 60)
     print("🔵 CRÉATION DEVIS - DÉBUT")
@@ -957,6 +1327,10 @@ async def create_devis(devis: DevisCreate, db: Session = Depends(get_db)):
     print("=" * 60)
     
     try:
+        # Récupérer l'ID utilisateur connecté
+        id_utilisateur = get_current_user_id(request)
+        print(f"  🔑 Devis créé par l'utilisateur ID: {id_utilisateur}")
+        
         # Générer un numéro de devis automatique si non fourni
         if not devis.numero_devis:
             last_devis = db.query(Devis).order_by(Devis.id_devis.desc()).first()
@@ -985,6 +1359,7 @@ async def create_devis(devis: DevisCreate, db: Session = Depends(get_db)):
         
         db_devis = Devis(
             numero_devis=numero_devis,
+            id_utilisateur=id_utilisateur,  # 🔥 ID de l'utilisateur connecté
             **devis_data
         )
         db.add(db_devis)
@@ -1017,12 +1392,33 @@ async def create_devis(devis: DevisCreate, db: Session = Depends(get_db)):
                 )
                 db.add(ligne)
             db.commit()
+            
+            # Recalculer les totaux du devis après ajout des lignes
+            lignes_devis = db.query(LigneDevis).filter(LigneDevis.id_devis == db_devis.id_devis).all()
+            total_ht = sum(ligne.total_ht for ligne in lignes_devis)
+            
+            # Calculer le précompte si activé
+            total_precompte = 0
+            if db_devis.precompte_applique:
+                # Récupérer les articles pour vérifier le type
+                for ligne in lignes_devis:
+                    article = db.query(Article).filter(Article.id_article == ligne.id_article).first()
+                    if article and article.type_article == 'SERVICE':
+                        total_precompte += ligne.total_ht * 0.095  # 9.5%
+            
+            total_ttc = total_ht - total_precompte
+            
+            # Mettre à jour le devis avec les totaux calculés
+            db_devis.total_ht = total_ht
+            db_devis.total_ttc = total_ttc
+            db.commit()
+            db.refresh(db_devis)
         
-        print("✅ DEVIS CRÉÉ AVEC SUCCÈS")
+        print("  DEVIS CRÉÉ AVEC SUCCÈS")
         return db_devis
         
     except Exception as e:
-        print(f"❌ ERREUR CRÉATION DEVIS: {e}")
+        print(f"  ERREUR CRÉATION DEVIS: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
@@ -1043,6 +1439,40 @@ async def get_devis_by_id(devis_id: int, db: Session = Depends(get_db)):
     if not devis:
         raise HTTPException(status_code=404, detail="Devis non trouvé")
     return devis
+
+@app.get("/api/devis/{devis_id}/lignes")
+async def get_devis_lignes(devis_id: int, db: Session = Depends(get_db)):
+    """Récupérer les lignes d'un devis"""
+    try:
+        # Vérifier que le devis existe
+        devis = db.query(Devis).filter(Devis.id_devis == devis_id).first()
+        if not devis:
+            raise HTTPException(status_code=404, detail="Devis non trouvé")
+        
+        # Récupérer les lignes
+        lignes = db.query(LigneDevis).filter(LigneDevis.id_devis == devis_id).all()
+        
+        # Enrichir les lignes avec les informations des articles
+        lignes_enrichies = []
+        for ligne in lignes:
+            article = db.query(Article).filter(Article.id_article == ligne.id_article).first()
+            ligne_dict = {
+                "id_article": ligne.id_article,
+                "designation": article.designation if article else "N/A",
+                "quantite": ligne.quantite,
+                "prix_unitaire": float(ligne.prix_unitaire),
+                "montant_total": float(ligne.total_ht if hasattr(ligne, 'total_ht') else ligne.quantite * ligne.prix_unitaire)
+            }
+            lignes_enrichies.append(ligne_dict)
+        
+        return lignes_enrichies
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"  ERREUR GET LIGNES DEVIS: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
 
 @app.get("/api/devis/{devis_id}/details")
 async def get_devis_details(devis_id: int, db: Session = Depends(get_db)):
@@ -1070,7 +1500,8 @@ async def get_devis_details(devis_id: int, db: Session = Depends(get_db)):
             "total_ht": ligne.total_ht if hasattr(ligne, 'total_ht') else 0,
             "designation": article.designation if article else "N/A",
             "article_designation": article.designation if article else "N/A",
-            "article_nom": article.designation if article else "N/A"
+            "article_nom": article.designation if article else "N/A",
+            "type_article": article.type_article if article else "PRODUIT"  # Ajouter le type d'article
         }
         lignes_enrichies.append(ligne_dict)
     
@@ -1095,34 +1526,101 @@ async def get_devis_details(devis_id: int, db: Session = Depends(get_db)):
         "lignes": lignes_enrichies
     }
 
-@app.put("/api/devis/{devis_id}", response_model=DevisResponse)
-async def update_devis(devis_id: int, devis: DevisCreate, db: Session = Depends(get_db)):
+@app.put("/api/devis/{devis_id}")
+async def update_devis(devis_id: int, data: dict, db: Session = Depends(get_db)):
     """Mettre à jour un devis"""
-    db_devis = db.query(Devis).filter(Devis.id_devis == devis_id).first()
-    if not db_devis:
-        raise HTTPException(status_code=404, detail="Devis non trouvé")
-    
-    # Mettre à jour les champs du devis
-    devis_data = devis.dict(exclude={'lignes'})
-    for key, value in devis_data.items():
-        if value is not None:
-            setattr(db_devis, key, value)
-    
-    # Supprimer les anciennes lignes
-    db.query(LigneDevis).filter(LigneDevis.id_devis == devis_id).delete()
-    
-    # Ajouter les nouvelles lignes
-    if hasattr(devis, 'lignes') and devis.lignes:
-        for ligne_data in devis.lignes:
-            ligne = LigneDevis(
+    try:
+        print(f"🔍 DEBUG - Modification devis {devis_id}: {data}")
+        
+        db_devis = db.query(Devis).filter(Devis.id_devis == devis_id).first()
+        if not db_devis:
+            raise HTTPException(status_code=404, detail="Devis non trouvé")
+        
+        # Mettre à jour les champs du devis
+        db_devis.id_client = data.get('id_client', db_devis.id_client)
+        db_devis.numero_devis = data.get('numero_devis', db_devis.numero_devis)
+        db_devis.date_devis = data.get('date_devis', db_devis.date_devis)
+        db_devis.date_validite = data.get('date_validite', db_devis.date_validite)
+        db_devis.statut = data.get('statut', db_devis.statut)
+        db_devis.notes = data.get('notes', db_devis.notes)
+        
+        # Accepter les deux formats : total_* ou montant_*
+        db_devis.total_ht = float(data.get('total_ht', data.get('montant_ht', db_devis.total_ht)))
+        db_devis.total_tva = float(data.get('total_tva', data.get('montant_tva', db_devis.total_tva if hasattr(db_devis, 'total_tva') else 0)))
+        db_devis.total_ttc = float(data.get('total_ttc', data.get('montant_ttc', db_devis.total_ttc)))
+        
+        # Supprimer les anciennes lignes
+        db.query(LigneDevis).filter(LigneDevis.id_devis == devis_id).delete()
+        
+        # Ajouter les nouvelles lignes
+        lignes = data.get('lignes', [])
+        for ligne in lignes:
+            # Calculer le total
+            total_ligne = ligne.get('montant_total', ligne.get('total_ht', ligne['quantite'] * ligne['prix_unitaire']))
+            
+            db_ligne = LigneDevis(
                 id_devis=devis_id,
-                **ligne_data.dict()
+                id_article=ligne['id_article'],
+                quantite=ligne['quantite'],
+                prix_unitaire=ligne['prix_unitaire'],
+                total_ht=float(total_ligne)
             )
-            db.add(ligne)
-    
-    db.commit()
-    db.refresh(db_devis)
-    return db_devis
+            db.add(db_ligne)
+        
+        db.commit()
+        db.refresh(db_devis)
+        
+        print(f"  Devis {db_devis.numero_devis} modifié avec succès!")
+        
+        # Retourner avec infos client
+        client = db.query(Client).filter(Client.id_client == db_devis.id_client).first()
+        return {
+            "id_devis": db_devis.id_devis,
+            "numero_devis": db_devis.numero_devis,
+            "id_client": db_devis.id_client,
+            "date_devis": str(db_devis.date_devis),
+            "montant_ht": float(db_devis.total_ht),
+            "montant_ttc": float(db_devis.total_ttc),
+            "validite": db_devis.validite,
+            "description": db_devis.description,
+            "statut": db_devis.statut,
+            "client_nom": client.nom if client else "N/A"
+        }
+    except Exception as e:
+        db.rollback()
+        print(f"  ERREUR modification devis: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
+
+@app.put("/api/devis/{devis_id}/annuler")
+async def annuler_devis(devis_id: int, db: Session = Depends(get_db)):
+    """Annuler un devis (marquer comme Annulé au lieu de supprimer)"""
+    try:
+        db_devis = db.query(Devis).filter(Devis.id_devis == devis_id).first()
+        if not db_devis:
+            raise HTTPException(status_code=404, detail="Devis non trouvé")
+        
+        # Vérifier si déjà annulé
+        if db_devis.statut == 'Annulé':
+            raise HTTPException(status_code=400, detail="Ce devis est déjà annulé")
+        
+        # Marquer le devis comme annulé
+        db_devis.statut = 'Annulé'
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": f"Devis {db_devis.numero_devis} annulé avec succès"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"  ERREUR annulation devis: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erreur lors de l'annulation : {str(e)}")
 
 @app.delete("/api/devis/{devis_id}")
 async def delete_devis(devis_id: int, db: Session = Depends(get_db)):
@@ -1155,7 +1653,7 @@ async def valider_devis(devis_id: int, db: Session = Depends(get_db)):
     last_facture = db.query(Facture).order_by(Facture.id_facture.desc()).first()
     next_num = (last_facture.id_facture + 1) if last_facture else 1
     year = datetime.now().year
-    numero_facture = f"FACT-{year}-{next_num:03d}"
+    numero_facture = f"FAC-{year}-{next_num:03d}"
     
     # Créer la facture (NON PAYÉE initialement)
     # Le statut sera mis à jour lors du premier règlement
@@ -1163,15 +1661,16 @@ async def valider_devis(devis_id: int, db: Session = Depends(get_db)):
         numero_facture=numero_facture,
         type_facture='NORMALE',
         id_client=db_devis.id_client,
+        id_utilisateur=db_devis.id_utilisateur,  # 🔥 Hériter de l'utilisateur qui a créé le devis
         date_facture=date.today(),
         date_echeance=date.today() + timedelta(days=30),
         montant_ht=db_devis.total_ht,
         montant_ttc=db_devis.total_ttc,
-        montant_avance=0,  # ✅ Aucun paiement encore
-        montant_reste=db_devis.total_ttc,  # ✅ Tout reste à payer
-        description=f"Facture issue du devis {db_devis.numero_devis}",
+        montant_avance=0,  #   Aucun paiement encore
+        montant_reste=db_devis.total_ttc,  #   Tout reste à payer
+        description=db_devis.description or f"Facture issue du devis {db_devis.numero_devis}",
         precompte_applique=db_devis.precompte_applique,
-        statut='IMPAYÉE',  # ✅ IMPAYÉE (pas 'En attente')
+        statut='IMPAYÉE',  #   IMPAYÉE (pas 'En attente')
         mode_paiement=None,
         notes=db_devis.notes or db_devis.description,
         id_devis=db_devis.id_devis
@@ -1182,18 +1681,21 @@ async def valider_devis(devis_id: int, db: Session = Depends(get_db)):
     
     # 3. Copier les lignes du devis vers la facture
     lignes_devis = db.query(LigneDevis).filter(LigneDevis.id_devis == devis_id).all()
+    print(f"  Copie de {len(lignes_devis)} ligne(s) du devis {db_devis.numero_devis} vers facture {numero_facture}")
+    
     for ligne_devis in lignes_devis:
         ligne_facture = LigneFacture(
             id_facture=facture.id_facture,
             id_article=ligne_devis.id_article,
             quantite=ligne_devis.quantite,
             prix_unitaire=ligne_devis.prix_unitaire,
-            montant_ht=ligne_devis.total_ht,
-            montant_ttc=ligne_devis.total_ht  # Calculer si nécessaire
+            total_ht=ligne_devis.total_ht
         )
         db.add(ligne_facture)
+        print(f"    Ligne ajoutée: {ligne_devis.quantite}x article {ligne_devis.id_article} = {ligne_devis.total_ht} FCFA")
     
     db.commit()
+    print(f"  Facture {numero_facture} créée avec {len(lignes_devis)} ligne(s)")
     
     return {
         "message": "Devis validé et facture créée avec succès",
@@ -1236,18 +1738,26 @@ async def get_dashboard_stats(db: Session = Depends(get_db)):
         nb_avoirs = db.query(func.count(Avoir.id_avoir)).scalar() or 0
         
         # Statistique 8: Chiffre d'Affaires avec retours soustraits (ligne 336-361)
+        # 🔥 Mélange: COMPTOIR/RETOUR utilise total_ttc, NORMALE utilise montant_avance (déjà payé)
+        # 🔥 CORRECTION: Pour facturation NORMALE, ne comptabiliser que les factures payées (statut Payée)
         ca_total = db.query(
             func.coalesce(
                 func.sum(
                     case(
-                        (Facture.type_facture == 'RETOUR', -Facture.montant_avance),
-                        else_=Facture.montant_avance
+                        (Facture.type_facture == 'RETOUR', -Facture.total_ttc),
+                        (Facture.type_facture == 'COMPTOIR', Facture.total_ttc),
+                        else_=Facture.montant_avance  # NORMALE utilise montant déjà payé
                     )
                 ),
                 0
             )
         ).filter(
             Facture.statut != 'Annulée'
+        ).filter(
+            # Pour factures NORMALES: seulement celles payées (montant_avance > 0)
+            # Pour COMPTOIR/RETOUR: toutes les non-annulées
+            ((Facture.type_facture == 'NORMALE') & (Facture.montant_avance > 0)) |
+            (Facture.type_facture.in_(['COMPTOIR', 'RETOUR']))
         ).scalar() or 0
         
         # Statistique 9: Créances (Impayés) (ligne 363-372)
@@ -1283,38 +1793,19 @@ async def get_ventes_par_mois(db: Session = Depends(get_db)):
         
         annee_actuelle = datetime.now().year
         
-        # VENTES COMPTOIR par mois (MySQL compatible)
+        # VENTES COMPTOIR NETTES par mois (retours soustraits)
+        # 🔥 CORRECTION: Utiliser total_ttc (montant réel vendu) au lieu de montant_avance (montant reçu)
         resultats_comptoir = db.query(
-            extract('month', Facture.date_facture).label('mois'),
-            func.coalesce(func.sum(Facture.montant_avance), 0).label('total')
-        ).filter(
-            extract('year', Facture.date_facture) == annee_actuelle,
-            Facture.type_facture == 'COMPTOIR',
-            Facture.statut != 'Annulée'
-        ).group_by(
-            extract('month', Facture.date_facture)
-        ).order_by('mois').all()
-        
-        # VENTES NORMALES par mois (MySQL compatible)
-        resultats_normales = db.query(
-            extract('month', Facture.date_facture).label('mois'),
-            func.coalesce(func.sum(Facture.montant_avance), 0).label('total')
-        ).filter(
-            extract('year', Facture.date_facture) == annee_actuelle,
-            Facture.type_facture == 'NORMALE',
-            Facture.statut != 'Annulée'
-        ).group_by(
-            extract('month', Facture.date_facture)
-        ).order_by('mois').all()
-        
-        # TOTAL (avec retours soustraits) - MySQL compatible
-        resultats_total = db.query(
             extract('month', Facture.date_facture).label('mois'),
             func.coalesce(
                 func.sum(
                     case(
-                        (Facture.type_facture == 'RETOUR', -Facture.montant_avance),
-                        else_=Facture.montant_avance
+                        # Les factures de retour impactent le net en négatif
+                        (Facture.type_facture == 'RETOUR', -Facture.total_ttc),
+                        # Les ventes comptoir impactent en positif
+                        (Facture.type_facture == 'COMPTOIR', Facture.total_ttc),
+                        # Autres types n'impactent pas la série comptoir
+                        else_=0
                     )
                 ),
                 0
@@ -1322,6 +1813,48 @@ async def get_ventes_par_mois(db: Session = Depends(get_db)):
         ).filter(
             extract('year', Facture.date_facture) == annee_actuelle,
             Facture.statut != 'Annulée'
+        ).group_by(
+            extract('month', Facture.date_facture)
+        ).order_by('mois').all()
+        
+        # VENTES NORMALES par mois (sans retours)
+        # 🔥 Pour facturation NORMALE: utiliser montant_avance (montant déjà payé) car paiement différé possible
+        # 🔥 CORRECTION: Ne comptabiliser que les factures payées (montant_avance > 0)
+        resultats_normales = db.query(
+            extract('month', Facture.date_facture).label('mois'),
+            func.coalesce(func.sum(Facture.montant_avance), 0).label('total')
+        ).filter(
+            extract('year', Facture.date_facture) == annee_actuelle,
+            Facture.type_facture == 'NORMALE',
+            Facture.statut != 'Annulée',
+            Facture.montant_avance > 0  # Seulement les factures payées
+        ).group_by(
+            extract('month', Facture.date_facture)
+        ).order_by('mois').all()
+        
+        # TOTAL (avec retours soustraits) - MySQL compatible
+        # 🔥 Mélange: COMPTOIR/RETOUR utilise total_ttc, NORMALE utilise montant_avance (déjà payé)
+        # 🔥 CORRECTION: Pour facturation NORMALE, ne comptabiliser que les factures payées (montant_avance > 0)
+        resultats_total = db.query(
+            extract('month', Facture.date_facture).label('mois'),
+            func.coalesce(
+                func.sum(
+                    case(
+                        (Facture.type_facture == 'RETOUR', -Facture.total_ttc),
+                        (Facture.type_facture == 'COMPTOIR', Facture.total_ttc),
+                        else_=Facture.montant_avance  # NORMALE utilise montant déjà payé
+                    )
+                ),
+                0
+            ).label('total')
+        ).filter(
+            extract('year', Facture.date_facture) == annee_actuelle,
+            Facture.statut != 'Annulée'
+        ).filter(
+            # Pour factures NORMALES: seulement celles payées (montant_avance > 0)
+            # Pour COMPTOIR/RETOUR: toutes les non-annulées
+            ((Facture.type_facture == 'NORMALE') & (Facture.montant_avance > 0)) |
+            (Facture.type_facture.in_(['COMPTOIR', 'RETOUR']))
         ).group_by(
             extract('month', Facture.date_facture)
         ).order_by('mois').all()
@@ -1337,9 +1870,13 @@ async def get_ventes_par_mois(db: Session = Depends(get_db)):
         totaux_total = []
         
         for i in range(1, 13):
-            totaux_comptoir.append(comptoir_dict.get(i, 0))
-            totaux_normales.append(normales_dict.get(i, 0))
-            totaux_total.append(total_dict.get(i, 0))
+            val_comp = comptoir_dict.get(i, 0)
+            val_norm = normales_dict.get(i, 0)
+            val_total = total_dict.get(i, 0)
+            # Empêcher les valeurs négatives dans les graphes
+            totaux_comptoir.append(val_comp if val_comp > 0 else 0)
+            totaux_normales.append(val_norm if val_norm > 0 else 0)
+            totaux_total.append(val_total if val_total > 0 else 0)
         
         return {
             "mois": ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 
@@ -1450,36 +1987,92 @@ async def get_fournisseurs(db: Session = Depends(get_db)):
     fournisseurs = db.query(Fournisseur).all()
     return fournisseurs
 
-@app.get("/api/fournisseurs/{fournisseur_id}", response_model=FournisseurResponse)
+@app.get("/api/fournisseurs/{fournisseur_id}")
 async def get_fournisseur(fournisseur_id: int, db: Session = Depends(get_db)):
-    """Récupérer un fournisseur par ID"""
-    fournisseur = db.query(Fournisseur).filter(Fournisseur.id_fournisseur == fournisseur_id).first()
-    if not fournisseur:
-        raise HTTPException(status_code=404, detail="Fournisseur non trouvé")
-    return fournisseur
+    """Récupérer un fournisseur par ID avec statistiques"""
+    try:
+        fournisseur = db.query(Fournisseur).filter(Fournisseur.id_fournisseur == fournisseur_id).first()
+        if not fournisseur:
+            raise HTTPException(status_code=404, detail="Fournisseur non trouvé")
+        
+        # Ajouter des statistiques du fournisseur
+        articles_count = db.query(Article).filter(Article.id_fournisseur == fournisseur_id).count()
+        
+        # Calculer le montant total des achats (articles avec ce fournisseur)
+        montant_total_achats = db.query(func.sum(Article.prix_achat * Article.stock_actuel)).filter(
+            Article.id_fournisseur == fournisseur_id
+        ).scalar() or 0
+        
+        # Dernier article reçu
+        dernier_article = db.query(Article).filter(
+            Article.id_fournisseur == fournisseur_id
+        ).order_by(Article.created_at.desc()).first()
+        
+        return {
+            "id_fournisseur": fournisseur.id_fournisseur,
+            "nom_fournisseur": fournisseur.nom_fournisseur,
+            "adresse": fournisseur.adresse,
+            "telephone": fournisseur.telephone,
+            "email": fournisseur.email,
+            "ville": fournisseur.ville,
+            "pays": fournisseur.pays,
+            "nif": fournisseur.nif,
+            "created_at": fournisseur.created_at,
+            "statistiques": {
+                "nb_articles": articles_count,
+                "montant_total_achats": float(montant_total_achats),
+                "dernier_article": dernier_article.created_at if dernier_article else None
+            }
+        }
+    except Exception as e:
+        print(f"Erreur get_fournisseur: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
 
 @app.post("/api/fournisseurs", response_model=FournisseurResponse)
 async def create_fournisseur(fournisseur: FournisseurCreate, db: Session = Depends(get_db)):
     """Créer un nouveau fournisseur"""
-    new_fournisseur = Fournisseur(**fournisseur.dict())
+    # Générer un numéro de fournisseur automatique si non fourni
+    fournisseur_data = fournisseur.dict()
+    if not fournisseur_data.get('numero_fournisseur'):
+        last_fournisseur = db.query(Fournisseur).order_by(Fournisseur.id_fournisseur.desc()).first()
+        next_num = (last_fournisseur.id_fournisseur + 1) if last_fournisseur else 1
+        year = datetime.now().year
+        fournisseur_data['numero_fournisseur'] = f"FOUR-{year}-{next_num:03d}"
+    
+    new_fournisseur = Fournisseur(**fournisseur_data)
     db.add(new_fournisseur)
     db.commit()
     db.refresh(new_fournisseur)
     return new_fournisseur
 
-@app.put("/api/fournisseurs/{fournisseur_id}", response_model=FournisseurResponse)
-async def update_fournisseur(fournisseur_id: int, fournisseur: FournisseurCreate, db: Session = Depends(get_db)):
+@app.put("/api/fournisseurs/{fournisseur_id}")
+async def update_fournisseur(fournisseur_id: int, data: dict, db: Session = Depends(get_db)):
     """Mettre à jour un fournisseur"""
-    db_fournisseur = db.query(Fournisseur).filter(Fournisseur.id_fournisseur == fournisseur_id).first()
-    if not db_fournisseur:
-        raise HTTPException(status_code=404, detail="Fournisseur non trouvé")
-    
-    for key, value in fournisseur.dict(exclude_unset=True).items():
-        setattr(db_fournisseur, key, value)
-    
-    db.commit()
-    db.refresh(db_fournisseur)
-    return db_fournisseur
+    try:
+        print(f"🔍 DEBUG - Modification fournisseur {fournisseur_id}: {data}")
+        
+        db_fournisseur = db.query(Fournisseur).filter(Fournisseur.id_fournisseur == fournisseur_id).first()
+        if not db_fournisseur:
+            raise HTTPException(status_code=404, detail="Fournisseur non trouvé")
+        
+        # Mettre à jour les champs
+        for key, value in data.items():
+            if hasattr(db_fournisseur, key) and value is not None:
+                setattr(db_fournisseur, key, value)
+        
+        db.commit()
+        db.refresh(db_fournisseur)
+        
+        print(f"  Fournisseur {db_fournisseur.nom_fournisseur} modifié avec succès!")
+        return db_fournisseur
+    except Exception as e:
+        db.rollback()
+        print(f"  ERREUR modification fournisseur: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
 
 @app.delete("/api/fournisseurs/{fournisseur_id}")
 async def delete_fournisseur(fournisseur_id: int, db: Session = Depends(get_db)):
@@ -1559,11 +2152,46 @@ async def get_reglements_facture(facture_id: int, db: Session = Depends(get_db))
 
 @app.get("/api/reglements/{reglement_id}")
 async def get_reglement(reglement_id: int, db: Session = Depends(get_db)):
-    """Récupérer un règlement par ID"""
-    reglement = db.query(Reglement).filter(Reglement.id_reglement == reglement_id).first()
-    if not reglement:
-        raise HTTPException(status_code=404, detail="Règlement non trouvé")
-    return reglement
+    """Récupérer un règlement par ID avec détails de la facture"""
+    try:
+        reglement = db.query(Reglement).filter(Reglement.id_reglement == reglement_id).first()
+        if not reglement:
+            raise HTTPException(status_code=404, detail="Règlement non trouvé")
+        
+        # Récupérer la facture associée
+        facture = db.query(Facture).filter(Facture.id_facture == reglement.id_facture).first()
+        
+        # Récupérer le client de la facture
+        client = None
+        if facture and facture.id_client:
+            client = db.query(Client).filter(Client.id_client == facture.id_client).first()
+        
+        return {
+            "id_reglement": reglement.id_reglement,
+            "id_facture": reglement.id_facture,
+            "montant": float(reglement.montant),
+            "mode_paiement": reglement.mode_paiement,
+            "date_reglement": reglement.date_reglement,
+            "reference": reglement.reference,
+            "created_at": reglement.created_at,
+            "facture": {
+                "numero_facture": facture.numero_facture if facture else None,
+                "date_facture": facture.date_facture if facture else None,
+                "montant_ht": float(facture.total_ht) if facture else None,
+                "montant_ttc": float(facture.total_ttc) if facture else None,
+                "statut": facture.statut if facture else None
+            } if facture else None,
+            "client": {
+                "nom": client.nom if client else None,
+                "telephone": client.telephone if client else None,
+                "email": client.email if client else None
+            } if client else None
+        }
+    except Exception as e:
+        print(f"Erreur get_reglement: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
 
 @app.post("/api/reglements")
 async def create_reglement(reglement: dict, db: Session = Depends(get_db)):
@@ -1578,6 +2206,13 @@ async def create_reglement(reglement: dict, db: Session = Depends(get_db)):
         premier_paiement = (montant_avance_actuel == 0)
         
         print(f"🔍 Règlement - Premier paiement: {premier_paiement}, montant_avance actuel: {montant_avance_actuel}")
+        
+        # Générer un numéro de règlement automatique si non fourni
+        if 'numero_reglement' not in reglement or not reglement.get('numero_reglement'):
+            last_reglement = db.query(Reglement).order_by(Reglement.id_reglement.desc()).first()
+            next_num = (last_reglement.id_reglement + 1) if last_reglement else 1
+            year = datetime.now().year
+            reglement['numero_reglement'] = f"REG-{year}-{next_num:03d}"
         
         # Créer le règlement
         new_reglement = Reglement(**reglement)
@@ -1622,7 +2257,7 @@ async def create_reglement(reglement: dict, db: Session = Depends(get_db)):
                 )
                 db.add(mouvement)
             
-            print(f"✅ Stock décrémenté pour {len(lignes)} article(s) - Facture {facture.numero_facture}")
+            print(f"  Stock décrémenté pour {len(lignes)} article(s) - Facture {facture.numero_facture}")
         
         db.commit()
         db.refresh(new_reglement)
@@ -1713,7 +2348,7 @@ async def generate_numero_avoir(db: Session = Depends(get_db)):
         numero_avoir = f"AVO-{year}-{next_num:03d}"
         return {"numero_avoir": numero_avoir}  # Retourner un JSON au lieu d'une chaîne
     except Exception as e:
-        print(f"❌ Erreur génération numéro avoir: {e}")
+        print(f"  Erreur génération numéro avoir: {e}")
         import traceback
         traceback.print_exc()
         # Retourner un numéro par défaut en cas d'erreur
@@ -1730,29 +2365,55 @@ async def get_avoir(avoir_id: int, db: Session = Depends(get_db)):
 @app.get("/api/avoirs/{avoir_id}/details")
 async def get_avoir_details(avoir_id: int, db: Session = Depends(get_db)):
     """Récupérer un avoir avec informations complètes"""
-    avoir = db.query(Avoir).filter(Avoir.id_avoir == avoir_id).first()
-    if not avoir:
-        raise HTTPException(status_code=404, detail="Avoir non trouvé")
-    
-    # Récupérer le client
-    client = db.query(Client).filter(Client.id_client == avoir.id_client).first()
-    
-    # Récupérer la facture si liée
-    facture = None
-    if avoir.id_facture:
-        facture = db.query(Facture).filter(Facture.id_facture == avoir.id_facture).first()
-    
-    return {
-        "id_avoir": avoir.id_avoir,
-        "numero_avoir": avoir.numero_avoir,
-        "date_avoir": avoir.date_avoir,
-        "id_facture": avoir.id_facture,
-        "motif": avoir.motif,
-        "montant_ttc": avoir.montant,  # MySQL a seulement 'montant'
-        "statut": avoir.statut,
-        "client_nom": client.nom if client else "N/A",
-        "facture_numero": facture.numero_facture if facture else None
-    }
+    try:
+        avoir = db.query(Avoir).filter(Avoir.id_avoir == avoir_id).first()
+        if not avoir:
+            raise HTTPException(status_code=404, detail="Avoir non trouvé")
+        
+        # Récupérer la facture si liée pour avoir l'id_client
+        facture = None
+        client = None
+        id_client = None
+        
+        if avoir.id_facture:
+            facture = db.query(Facture).filter(Facture.id_facture == avoir.id_facture).first()
+            if facture:
+                id_client = facture.id_client
+                client = db.query(Client).filter(Client.id_client == facture.id_client).first()
+        
+        # Récupérer les lignes
+        lignes = db.query(LigneAvoir).filter(LigneAvoir.id_avoir == avoir_id).all()
+        lignes_data = []
+        for ligne in lignes:
+            article = db.query(Article).filter(Article.id_article == ligne.id_article).first()
+            lignes_data.append({
+                "id_article": ligne.id_article,
+                "designation": article.designation if article else "N/A",
+                "quantite": ligne.quantite,
+                "prix_unitaire": float(ligne.prix_unitaire),
+                "montant_ht": float(ligne.montant_ht) if hasattr(ligne, 'montant_ht') else 0.0
+            })
+        
+        return {
+            "id_avoir": avoir.id_avoir,
+            "numero_avoir": avoir.numero_avoir,
+            "date_avoir": str(avoir.date_avoir),
+            "id_facture": avoir.id_facture,
+            "id_client": id_client,  # Récupéré depuis la facture
+            "motif": avoir.motif,
+            "montant_ht": float(avoir.montant),
+            "montant_tva": 0.0,  # Pas de colonne montant_tva dans la table avoir
+            "montant_ttc": float(avoir.montant),
+            "statut": avoir.statut,
+            "client_nom": client.nom if client else "N/A",
+            "facture_numero": facture.numero_facture if facture else None,
+            "lignes": lignes_data
+        }
+    except Exception as e:
+        print(f"  ERREUR GET AVOIR DETAILS: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
 
 @app.post("/api/avoirs")
 async def create_avoir(avoir: dict, db: Session = Depends(get_db)):
@@ -1785,8 +2446,7 @@ async def create_avoir(avoir: dict, db: Session = Depends(get_db)):
                 id_article=ligne_data['id_article'],
                 quantite=ligne_data['quantite'],
                 prix_unitaire=ligne_data['prix_unitaire'],
-                montant_ht=ligne_data.get('montant_ht', 0),
-                montant_ttc=ligne_data.get('montant_ttc', 0)
+                montant_ht=ligne_data.get('montant_ht', 0)
             )
             db.add(ligne)
         
@@ -1795,27 +2455,90 @@ async def create_avoir(avoir: dict, db: Session = Depends(get_db)):
         return new_avoir
     except Exception as e:
         db.rollback()
-        print(f"❌ Erreur création avoir: {e}")
-        print(f"📋 Données reçues: {avoir}")
-        print(f"📦 Lignes reçues: {lignes_data}")
+        print(f"  Erreur création avoir: {e}")
+        print(f"  Données reçues: {avoir}")
+        print(f"  Lignes reçues: {lignes_data}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=400, detail=f"Erreur lors de la création de l'avoir: {str(e)}")
 
 @app.put("/api/avoirs/{avoir_id}")
-async def update_avoir(avoir_id: int, avoir: dict, db: Session = Depends(get_db)):
+async def update_avoir(avoir_id: int, data: dict, db: Session = Depends(get_db)):
     """Mettre à jour un avoir"""
-    db_avoir = db.query(Avoir).filter(Avoir.id_avoir == avoir_id).first()
-    if not db_avoir:
-        raise HTTPException(status_code=404, detail="Avoir non trouvé")
-    
-    for key, value in avoir.items():
-        if hasattr(db_avoir, key):
-            setattr(db_avoir, key, value)
-    
-    db.commit()
-    db.refresh(db_avoir)
-    return db_avoir
+    try:
+        print(f"🔍 DEBUG - Modification avoir {avoir_id}: {data}")
+        
+        db_avoir = db.query(Avoir).filter(Avoir.id_avoir == avoir_id).first()
+        if not db_avoir:
+            raise HTTPException(status_code=404, detail="Avoir non trouvé")
+        
+        # Vérifier si l'avoir a déjà été traité (validé ou refusé)
+        if db_avoir.statut in ['VALIDE', 'TRAITE', 'REFUSE']:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Impossible de modifier un avoir {db_avoir.statut.lower()}. Seuls les avoirs 'EN_ATTENTE' peuvent être modifiés."
+            )
+        
+        # Mettre à jour les champs de l'avoir (ATTENTION: pas de id_client dans la table)
+        db_avoir.numero_avoir = data.get('numero_avoir', db_avoir.numero_avoir)
+        db_avoir.id_facture = data.get('id_facture', db_avoir.id_facture)
+        db_avoir.date_avoir = data.get('date_avoir', db_avoir.date_avoir)
+        db_avoir.motif = data.get('motif', db_avoir.motif)
+        db_avoir.statut = data.get('statut', db_avoir.statut)
+        
+        # La table avoir a seulement 'montant', pas montant_ht/tva/ttc séparés
+        # Utiliser montant_ttc comme valeur principale
+        montant_value = float(data.get('montant_ttc', data.get('total_ttc', data.get('montant_ht', data.get('total_ht', db_avoir.montant)))))
+        db_avoir.montant = montant_value
+        
+        # Supprimer les anciennes lignes
+        db.query(LigneAvoir).filter(LigneAvoir.id_avoir == avoir_id).delete()
+        
+        # Ajouter les nouvelles lignes
+        lignes = data.get('lignes', [])
+        for ligne in lignes:
+            # Calculer le total
+            total_ligne = ligne.get('montant_total', ligne.get('montant_ht', ligne['quantite'] * ligne['prix_unitaire']))
+            
+            db_ligne = LigneAvoir(
+                id_avoir=avoir_id,
+                id_article=ligne['id_article'],
+                quantite=ligne['quantite'],
+                prix_unitaire=ligne['prix_unitaire'],
+                montant_ht=float(total_ligne)
+            )
+            db.add(db_ligne)
+        
+        db.commit()
+        db.refresh(db_avoir)
+        
+        print(f"  Avoir {db_avoir.numero_avoir} modifié avec succès!")
+        
+        # Récupérer l'id_client depuis la facture
+        id_client = None
+        if db_avoir.id_facture:
+            facture = db.query(Facture).filter(Facture.id_facture == db_avoir.id_facture).first()
+            if facture:
+                id_client = facture.id_client
+        
+        return {
+            "id_avoir": db_avoir.id_avoir,
+            "numero_avoir": db_avoir.numero_avoir,
+            "id_facture": db_avoir.id_facture,
+            "id_client": id_client,  # Récupéré depuis la facture
+            "date_avoir": str(db_avoir.date_avoir),
+            "motif": db_avoir.motif,
+            "statut": db_avoir.statut,
+            "montant_ht": float(db_avoir.montant),
+            "montant_tva": 0.0,
+            "montant_ttc": float(db_avoir.montant)
+        }
+    except Exception as e:
+        db.rollback()
+        print(f"  ERREUR MODIFICATION AVOIR: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
 
 @app.delete("/api/avoirs/{avoir_id}")
 async def delete_avoir(avoir_id: int, db: Session = Depends(get_db)):
@@ -1823,6 +2546,16 @@ async def delete_avoir(avoir_id: int, db: Session = Depends(get_db)):
     db_avoir = db.query(Avoir).filter(Avoir.id_avoir == avoir_id).first()
     if not db_avoir:
         raise HTTPException(status_code=404, detail="Avoir non trouvé")
+    
+    # Vérifier si l'avoir a déjà été traité (validé ou refusé)
+    if db_avoir.statut in ['VALIDE', 'TRAITE', 'REFUSE']:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Impossible de supprimer un avoir {db_avoir.statut.lower()}. Seuls les avoirs 'EN_ATTENTE' peuvent être supprimés."
+        )
+    
+    # Supprimer les lignes d'abord
+    db.query(LigneAvoir).filter(LigneAvoir.id_avoir == avoir_id).delete()
     
     db.delete(db_avoir)
     db.commit()
@@ -1912,7 +2645,7 @@ async def valider_avoir(avoir_id: int, db: Session = Depends(get_db)):
         
         # 2. Valider l'avoir - TRAITE pas VALIDE (ligne 1595)
         db_avoir.statut = 'TRAITE'
-        print(f"✅ Statut avoir changé: {db_avoir.statut}")
+        print(f"  Statut avoir changé: {db_avoir.statut}")
         
         # 3. Récupérer la facture associée (ligne 1597-1610)
         facture = db.query(Facture).filter(Facture.id_facture == db_avoir.id_facture).first()
@@ -1940,35 +2673,51 @@ async def valider_avoir(avoir_id: int, db: Session = Depends(get_db)):
                 reference=f"Remboursement avoir {db_avoir.numero_avoir}"
             )
             db.add(remboursement)
-            db.flush()  # ✅ Flush pour que le règlement soit pris en compte dans le calcul
-            print(f"💰 Remboursement créé: {-montant_avoir} FCFA")
+            db.flush()  #   Flush pour que le règlement soit pris en compte dans le calcul
+            print(f"  Remboursement créé: {-montant_avoir} FCFA")
         else:
-            print(f"⚠️  Remboursement existe déjà")
+            print(f"    Remboursement existe déjà")
         
         # 5. Calculer le nouveau solde de la facture (ligne 1629-1637)
+        #    NE PAS CHANGER LE STATUT SI LA FACTURE ÉTAIT PAYÉE !
+        # L'avoir est un REMBOURSEMENT, pas un impayé
+        
+        statut_avant = facture.statut
+        etait_payee = (statut_avant == "Payée")
+        
         total_reglements = db.query(
             func.coalesce(func.sum(Reglement.montant), 0)
         ).filter(
             Reglement.id_facture == facture.id_facture
         ).scalar() or 0
         
-        print(f"💰 Total règlements (avec remboursement): {total_reglements} FCFA")
+        print(f"  Total règlements (avec remboursement): {total_reglements} FCFA")
         
         montant_ttc_facture = float(facture.montant_ttc or facture.total_ttc or 0)
         solde_restant = montant_ttc_facture - total_reglements
         
-        print(f"📊 Calcul: {montant_ttc_facture} - {total_reglements} = {solde_restant} FCFA")
+        print(f"  Calcul: {montant_ttc_facture} - {total_reglements} = {solde_restant} FCFA")
+        print(f"🔍 État avant: {statut_avant} | Était payée: {etait_payee}")
         
-        # 6. Mettre à jour le statut de la facture (ligne 1640-1656)
-        if solde_restant <= 0:
+        # 6. Mettre à jour le statut SEULEMENT si facture n'était pas déjà payée
+        if etait_payee:
+            # Facture reste PAYÉE car tout avait déjà été réglé
             facture.statut = "Payée"
-        elif solde_restant < montant_ttc_facture:
-            facture.statut = "Partiellement payée"
+            # Montant_avance = montant_ttc car elle était entièrement payée
+            facture.montant_avance = montant_ttc_facture
+            facture.montant_reste = 0
+            print(f"  Facture reste PAYÉE (avoir = remboursement seulement)")
         else:
-            facture.statut = "En attente"
-        
-        facture.montant_reste = max(0, solde_restant)
-        facture.montant_avance = montant_ttc_facture - facture.montant_reste
+            # Facture n'était pas payée, recalcul normal
+            if solde_restant <= 0:
+                facture.statut = "Payée"
+            elif solde_restant < montant_ttc_facture:
+                facture.statut = "Partiellement payée"
+            else:
+                facture.statut = "En attente"
+            
+            facture.montant_reste = max(0, solde_restant)
+            facture.montant_avance = montant_ttc_facture - facture.montant_reste
         
         print(f"   Après: montant_avance={facture.montant_avance}, montant_reste={facture.montant_reste}, statut={facture.statut}")
         
@@ -1981,26 +2730,26 @@ async def valider_avoir(avoir_id: int, db: Session = Depends(get_db)):
                 LigneAvoir.id_avoir == db_avoir.id_avoir
             ).all()
             
-            print(f"📦 {len(lignes_avoir)} ligne(s) d'avoir trouvée(s)")
+            print(f"  {len(lignes_avoir)} ligne(s) d'avoir trouvée(s)")
             
             # Si pas de lignes d'avoir, fallback sur les lignes de la facture (ancien comportement)
             if not lignes_avoir:
-                print(f"⚠️  Aucune ligne d'avoir, utilisation des lignes de facture")
+                print(f"    Aucune ligne d'avoir, utilisation des lignes de facture")
                 lignes_avoir = db.query(LigneFacture, Article).join(
                     Article, LigneFacture.id_article == Article.id_article
                 ).filter(
                     LigneFacture.id_facture == facture.id_facture
                 ).all()
-                print(f"📦 {len(lignes_avoir)} ligne(s) de facture trouvée(s)")
+                print(f"  {len(lignes_avoir)} ligne(s) de facture trouvée(s)")
         except Exception as e:
-            print(f"❌ Erreur récupération lignes: {e}")
+            print(f"  Erreur récupération lignes: {e}")
             lignes_avoir = []
         
         nb_articles_stock = 0
         for ligne, article in lignes_avoir:
             # Ne traiter que les PRODUITS (pas les SERVICES)
             if article.type_article != 'PRODUIT':
-                print(f"⏭️  Article {article.designation} est un SERVICE, pas de stock")
+                print(f"⏭   Article {article.designation} est un SERVICE, pas de stock")
                 continue
             # Remettre en stock (ligne 1713-1718)
             quantite_retour = ligne.quantite
@@ -2010,7 +2759,7 @@ async def valider_avoir(avoir_id: int, db: Session = Depends(get_db)):
             
             # Utiliser designation au lieu de nom
             nom_article = getattr(article, 'nom', None) or getattr(article, 'designation', 'Article')
-            print(f"📦 Article {nom_article}: stock {stock_avant} → {article.stock_actuel} (+{quantite_retour})")
+            print(f"  Article {nom_article}: stock {stock_avant} → {article.stock_actuel} (+{quantite_retour})")
             
             # Créer mouvement de stock ENTREE (ligne 1720-1723)
             mouvement = MouvementStock(
@@ -2022,13 +2771,13 @@ async def valider_avoir(avoir_id: int, db: Session = Depends(get_db)):
             )
             db.add(mouvement)
         
-        print(f"✅ {nb_articles_stock} article(s) remis en stock")
+        print(f"  {nb_articles_stock} article(s) remis en stock")
         print(f"💾 Commit des changements...")
         
         db.commit()
         db.refresh(db_avoir)
         
-        print(f"✅ VALIDATION TERMINÉE")
+        print(f"  VALIDATION TERMINÉE")
         print(f"{'='*80}\n")
         
         return {
@@ -2048,7 +2797,7 @@ async def valider_avoir(avoir_id: int, db: Session = Depends(get_db)):
         raise
     except Exception as e:
         db.rollback()
-        print(f"❌ ERREUR validation avoir: {e}")
+        print(f"  ERREUR validation avoir: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
@@ -2310,7 +3059,7 @@ async def valider_inventaire(ajustements: dict, db: Session = Depends(get_db)):
         
     except Exception as e:
         db.rollback()
-        print(f"❌ Erreur validation inventaire: {e}")
+        print(f"  Erreur validation inventaire: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
@@ -2354,8 +3103,32 @@ async def get_rapport(type_rapport: str, periode: str = "ce_mois", db: Session =
                 Facture.statut != 'Annulée'
             ).all()
             
-            # CA basé sur montant_avance (argent réellement encaissé) - ligne 279
-            ca_total = sum(float(f.montant_avance or 0) for f in factures)
+            # CA net: montant encaissé avec retours soustraits
+            # 🔥 CORRECTION: Utiliser la même logique que le dashboard
+            # COMPTOIR/RETOUR: utiliser total_ttc (montant réel vendu)
+            # NORMALE: utiliser montant_avance (montant déjà payé, seulement si payée)
+            from sqlalchemy import case
+            ca_total = db.query(
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (Facture.type_facture == 'RETOUR', -Facture.total_ttc),
+                            (Facture.type_facture == 'COMPTOIR', Facture.total_ttc),
+                            else_=Facture.montant_avance  # NORMALE utilise montant déjà payé
+                        )
+                    ),
+                    0
+                )
+            ).filter(
+                Facture.date_facture >= date_debut,
+                Facture.date_facture <= date_fin,
+                Facture.statut != 'Annulée'
+            ).filter(
+                # Pour factures NORMALES: seulement celles payées (montant_avance > 0)
+                # Pour COMPTOIR/RETOUR: toutes les non-annulées
+                ((Facture.type_facture == 'NORMALE') & (Facture.montant_avance > 0)) |
+                (Facture.type_facture.in_(['COMPTOIR', 'RETOUR']))
+            ).scalar() or 0
             nb_ventes = len(factures)
             ticket_moyen = ca_total / nb_ventes if nb_ventes > 0 else 0
             
@@ -2365,30 +3138,57 @@ async def get_rapport(type_rapport: str, periode: str = "ce_mois", db: Session =
             
             if periode == "cette_annee":
                 # Ventes par mois
+                # 🔥 CORRECTION: Utiliser la même logique (total_ttc pour COMPTOIR/RETOUR, montant_avance pour NORMALE payée)
                 ventes_par_mois = db.query(
                     extract('month', Facture.date_facture).label('mois'),
-                    func.sum(Facture.montant_avance).label('total')
+                    func.coalesce(
+                        func.sum(
+                            case(
+                                (Facture.type_facture == 'RETOUR', -Facture.total_ttc),
+                                (Facture.type_facture == 'COMPTOIR', Facture.total_ttc),
+                                else_=Facture.montant_avance  # NORMALE utilise montant déjà payé
+                            )
+                        ),
+                        0
+                    ).label('total')
                 ).filter(
                     Facture.date_facture >= date_debut,
                     Facture.date_facture <= date_fin,
                     Facture.statut != 'Annulée'
+                ).filter(
+                    ((Facture.type_facture == 'NORMALE') & (Facture.montant_avance > 0)) |
+                    (Facture.type_facture.in_(['COMPTOIR', 'RETOUR']))
                 ).group_by('mois').order_by('mois').all()
                 
                 mois_noms = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
                 for i in range(1, 13):
                     evolution_labels.append(mois_noms[i-1])
                     montant = next((float(v.total or 0) for v in ventes_par_mois if v.mois == i), 0)
-                    evolution_data.append(montant)
+                    # Empêcher valeurs négatives sur le graphe
+                    evolution_data.append(montant if montant > 0 else 0)
             
             elif periode == "ce_mois":
                 # Ventes par jour du mois
+                # 🔥 CORRECTION: Utiliser la même logique (total_ttc pour COMPTOIR/RETOUR, montant_avance pour NORMALE payée)
                 ventes_par_jour = db.query(
                     extract('day', Facture.date_facture).label('jour'),
-                    func.sum(Facture.montant_avance).label('total')
+                    func.coalesce(
+                        func.sum(
+                            case(
+                                (Facture.type_facture == 'RETOUR', -Facture.total_ttc),
+                                (Facture.type_facture == 'COMPTOIR', Facture.total_ttc),
+                                else_=Facture.montant_avance  # NORMALE utilise montant déjà payé
+                            )
+                        ),
+                        0
+                    ).label('total')
                 ).filter(
                     Facture.date_facture >= date_debut,
                     Facture.date_facture <= date_fin,
                     Facture.statut != 'Annulée'
+                ).filter(
+                    ((Facture.type_facture == 'NORMALE') & (Facture.montant_avance > 0)) |
+                    (Facture.type_facture.in_(['COMPTOIR', 'RETOUR']))
                 ).group_by('jour').order_by('jour').all()
                 
                 # Tous les jours du mois
@@ -2397,22 +3197,37 @@ async def get_rapport(type_rapport: str, periode: str = "ce_mois", db: Session =
                 for jour in range(1, nb_jours + 1):
                     evolution_labels.append(str(jour))
                     montant = next((float(v.total or 0) for v in ventes_par_jour if v.jour == jour), 0)
-                    evolution_data.append(montant)
+                    # Empêcher valeurs négatives sur le graphe
+                    evolution_data.append(montant if montant > 0 else 0)
             
             else:
                 # Pour les autres périodes, grouper par semaine
+                # 🔥 CORRECTION: Utiliser la même logique (total_ttc pour COMPTOIR/RETOUR, montant_avance pour NORMALE payée)
                 ventes_par_semaine = db.query(
                     extract('week', Facture.date_facture).label('semaine'),
-                    func.sum(Facture.montant_avance).label('total')
+                    func.coalesce(
+                        func.sum(
+                            case(
+                                (Facture.type_facture == 'RETOUR', -Facture.total_ttc),
+                                (Facture.type_facture == 'COMPTOIR', Facture.total_ttc),
+                                else_=Facture.montant_avance  # NORMALE utilise montant déjà payé
+                            )
+                        ),
+                        0
+                    ).label('total')
                 ).filter(
                     Facture.date_facture >= date_debut,
                     Facture.date_facture <= date_fin,
                     Facture.statut != 'Annulée'
+                ).filter(
+                    ((Facture.type_facture == 'NORMALE') & (Facture.montant_avance > 0)) |
+                    (Facture.type_facture.in_(['COMPTOIR', 'RETOUR']))
                 ).group_by('semaine').order_by('semaine').all()
                 
                 for v in ventes_par_semaine:
                     evolution_labels.append(f"Sem {int(v.semaine)}")
-                    evolution_data.append(float(v.total or 0))
+                    val = float(v.total or 0)
+                    evolution_data.append(val if val > 0 else 0)
             
             return {
                 "nb_ventes": nb_ventes,
@@ -2604,7 +3419,29 @@ async def get_current_user_info(db: Session = Depends(get_db)):
 @app.on_event("startup")
 async def startup_event():
     """Événement de démarrage de l'application"""
+    print("=" * 60)
     print("🚀 Démarrage de Tech Info Plus API v2.0")
+    print("=" * 60)
+    
+    # Vérifier la connexion MySQL et créer les tables si nécessaire
+    print("\n🗄️  Initialisation de la base de données...")
+    try:
+        if test_connection():
+            print("  ✅ Connexion MySQL OK")
+            print("\n  🔄 Migration automatique des tables...")
+            # Créer toutes les tables automatiquement via SQLAlchemy
+            if create_tables():
+                print("  ✅ Migration terminée avec succès !")
+            else:
+                print("  ⚠️  Erreur lors de la migration des tables")
+        else:
+            print("  ❌ ERREUR: Impossible de se connecter à MySQL")
+            print("  💡 Vérifiez que XAMPP MySQL est démarré sur le port 3306")
+    except Exception as e:
+        print(f"  ❌ Erreur initialisation base de données: {str(e)}")
+    
+    print("\n✅ Serveur API prêt!")
+    print("=" * 60)
 
 # ============================================================================
 # CONFIGURATION ENTREPRISE
@@ -2758,9 +3595,9 @@ async def create_bug(bug: dict, request: Request, db: Session = Depends(get_db))
                 parts = token.split('_')
                 if len(parts) >= 2:
                     id_utilisateur = int(parts[1])
-                    print(f"✅ ID utilisateur extrait du token: {id_utilisateur}")
+                    print(f"  ID utilisateur extrait du token: {id_utilisateur}")
             except (ValueError, IndexError) as e:
-                print(f"⚠️ Erreur extraction ID utilisateur: {e}")
+                print(f"   Erreur extraction ID utilisateur: {e}")
                 # Garder la valeur par défaut
         
         print(f"🐛 Création bug par utilisateur ID: {id_utilisateur}")
@@ -2778,7 +3615,7 @@ async def create_bug(bug: dict, request: Request, db: Session = Depends(get_db))
         db.commit()
         db.refresh(nouveau_bug)
         
-        print(f"✅ Bug créé avec succès - ID: {nouveau_bug.id_signalement}")
+        print(f"  Bug créé avec succès - ID: {nouveau_bug.id_signalement}")
         
         return {
             "message": "Bug créé avec succès",
@@ -2787,7 +3624,7 @@ async def create_bug(bug: dict, request: Request, db: Session = Depends(get_db))
         
     except Exception as e:
         db.rollback()
-        print(f"❌ Erreur création bug: {e}")
+        print(f"  Erreur création bug: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
@@ -2851,21 +3688,43 @@ async def delete_bug(bug_id: int, db: Session = Depends(get_db)):
         print(f"Erreur suppression bug: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-    
-    # Tester la connexion MySQL
-    if test_connection():
-        print("✅ Connexion MySQL établie")
-        # Créer les tables si elles n'existent pas
-        create_tables()
-        print("✅ Tables MySQL vérifiées")
-    else:
-        print("❌ Erreur de connexion MySQL - Vérifiez XAMPP")
+# ==================== ADMIN: NETTOYAGE COMPLET ====================
+from fastapi import APIRouter
 
+@app.delete("/api/admin/nettoyage/all")
+async def purge_all_data(db: Session = Depends(get_db)):
+    """
+    Attention: Cette route supprime toutes les données métier (ordre intégrité FK):
+    LignesAvoir -> Avoir -> LigneFacture -> LigneDevis -> Reglement -> Facture -> Devis -> LigneVente -> VenteComptoir -> MouvementStock -> Article/Client/Fournisseur/Bug
+    mais garde Utilisateurs/Configuration. Opération IRRÉVERSIBLE.
+    """
+    try:
+        db.query(LigneAvoir).delete()
+        db.query(Avoir).delete()
+        db.query(LigneFacture).delete()
+        db.query(LigneDevis).delete()
+        db.query(Reglement).delete()
+        db.query(Facture).delete()
+        db.query(Devis).delete()
+        db.query(LigneVente).delete()
+        db.query(VenteComptoir).delete()
+        db.query(MouvementStock).delete()
+        db.query(Article).delete()
+        db.query(Client).delete()
+        db.query(Fournisseur).delete()
+        db.query(SignalementBug).delete()
+        db.commit()
+        return {"message": "Toutes les données métiers (hors utilisateurs et config) ont été effacées avec succès."}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Erreur lors du nettoyage: {str(e)}")
+
+    
 if __name__ == "__main__":
     import uvicorn
-    print("🌐 Démarrage du serveur FastAPI...")
-    print("📖 Documentation: http://localhost:8000/docs")
-    print("🔧 Interface alternative: http://localhost:8000/redoc")
+    print("  Démarrage du serveur FastAPI...")
+    print("  Documentation: http://localhost:8000/docs")
+    print("  Interface alternative: http://localhost:8000/redoc")
     
     uvicorn.run(
         "app:app",

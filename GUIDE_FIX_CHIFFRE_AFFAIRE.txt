@@ -1,0 +1,122 @@
+===========================================================
+GUIDE : Correction du Chiffre d'Affaire Comptoir
+===========================================================
+
+PROBLÈME IDENTIFIÉ :
+-------------------
+Le chiffre d'affaire comptoir prenait en compte le montant reçu (20000 FCFA) au lieu 
+du montant réellement vendu (15000 FCFA), incluant ainsi la monnaie rendue (5000 FCFA).
+
+EXEMPLE DU PROBLÈME :
+--------------------
+Article vendu: 15 000 FCFA
+Montant donné par client: 20 000 FCFA  
+Monnaie rendue: 5 000 FCFA
+❌ Chiffre d'affaire affiché: 20 000 FCFA (INCORRECT)
+✅ Chiffre d'affaire correct: 15 000 FCFA
+
+CAUSE :
+-------
+Les statistiques utilisaient `montant_avance` (montant reçu au comptoir) au lieu de 
+`total_ttc` (montant réellement vendu).
+
+SOLUTION APPLIQUÉE :
+-------------------
+
+1. Dashboard CA Total (backend/app.py, lignes 1698-1711) :
+   AVANT:
+   ```
+   ca_total = sum(montant_avance) pour toutes les factures
+   ```
+   APRÈS:
+   ```
+   ca_total = sum(total_ttc) pour toutes les factures
+   ```
+
+2. Statistiques Ventes par Mois - Comptoir (backend/app.py, lignes 1746-1768) :
+   AVANT:
+   ```
+   COMPTOIR: sum(montant_avance)
+   RETOUR: -sum(montant_avance)
+   ```
+   APRÈS:
+   ```
+   COMPTOIR: sum(total_ttc)
+   RETOUR: -sum(total_ttc)
+   ```
+
+3. Statistiques Ventes par Mois - Normales (backend/app.py, lignes 1770-1779) :
+   AVANT:
+   ```
+   sum(montant_avance)
+   ```
+   APRÈS:
+   ```
+   sum(total_ttc)
+   ```
+
+4. Statistiques Ventes par Mois - Total (backend/app.py, lignes 1782-1801) :
+   AVANT:
+   ```
+   RETOUR: -sum(montant_avance)
+   AUTRES: sum(montant_avance)
+   ```
+   APRÈS:
+   ```
+   RETOUR: -sum(total_ttc)
+   AUTRES: sum(total_ttc)
+   ```
+
+5. Ventes du Jour Comptoir (backend/api/comptoir_routes.py, lignes 164-169) :
+   AVANT:
+   ```
+   total_jour = sum(montant_avance si COMPTOIR, -montant_avance si RETOUR)
+   ```
+   APRÈS:
+   ```
+   total_jour = sum(total_ttc si COMPTOIR, -total_ttc si RETOUR)
+   ```
+
+FICHIERS MODIFIÉS :
+------------------
+- backend/app.py (5 corrections - CA total + 4 statistiques par mois)
+- backend/api/comptoir_routes.py (1 correction - ventes du jour)
+
+DIFFÉRENCE MONTANT_AVANCE vs TOTAL_TTC :
+----------------------------------------
+- **montant_avance**: Montant effectivement reçu/payé (peut inclure la monnaie)
+- **total_ttc**: Montant réellement vendu (ne dépend pas du moyen de paiement)
+
+EXEMPLE PRATIQUE :
+-----------------
+Vente 1: 15 000 FCFA, Client donne 20 000 FCFA, Monnaie 5 000 FCFA
+- montant_avance = 20 000 (ce qui a été reçu)
+- total_ttc = 15 000 (ce qui a été vendu)
+
+Vente 2: 10 000 FCFA, Client donne 10 000 FCFA, Monnaie 0 FCFA
+- montant_avance = 10 000
+- total_ttc = 10 000
+
+TOTAL (avec l'ancien code):
+- ❌ CA affiché = 20 000 + 10 000 = 30 000 FCFA (INCORRECT)
+
+TOTAL (avec le nouveau code):
+- ✅ CA affiché = 15 000 + 10 000 = 25 000 FCFA (CORRECT)
+
+IMPACT :
+-------
+✅ Dashboard affiche maintenant le vrai chiffre d'affaire
+✅ Graphiques ventes par mois affichent les montants réels
+✅ Statistiques comptoir du jour sont exactes
+✅ Pas de modification des données en base de données
+✅ Correction rétroactive (toutes les ventes existantes sont corrigées)
+
+TEST :
+-----
+1. Faire une vente comptoir de 15000 FCFA, client donne 20000 FCFA
+2. Aller au Dashboard
+3. Vérifier que le CA affiche 15000 FCFA et non 20000 FCFA
+
+===========================================================
+
+

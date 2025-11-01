@@ -26,6 +26,9 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState(new Date());
 
+  // Dashboard chargé
+  console.log('📊 Dashboard chargé');
+
   useEffect(() => {
     loadAllData();
     
@@ -336,7 +339,7 @@ function Dashboard() {
     { icone: '📊', titre: 'Ventes Comptoir', valeur: stats?.nb_ventes_comptoir || 0 },
     { icone: '📊', titre: 'Devis', valeur: stats?.nb_devis || 0 },
     { icone: '📊', titre: 'Règlements', valeur: stats?.nb_reglements || 0 },
-    { icone: '📊', titre: 'Avoirs', valeur: stats?.nb_avoirs || 0 },
+    // { icone: '📊', titre: 'Avoirs', valeur: stats?.nb_avoirs || 0 }, // 🔒 Module désactivé
     { icone: '💰', titre: 'Chiffre d\'Affaires', valeur: formatMontant(stats?.ca_total || 0) },
     { icone: '💳', titre: 'Créances (Impayés)', valeur: formatMontant(stats?.creances || 0) },
   ];

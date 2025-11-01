@@ -34,13 +34,19 @@ function AvoirFormModal({ avoir, onClose, onSuccess }) {
             setFormData({
                 numero_avoir: avoir.numero_avoir || '',
                 date_avoir: avoir.date_avoir || new Date().toISOString().split('T')[0],
-                // id_client: avoir.id_client || '',  // Temporaire: retiré
+                id_client: avoir.id_client || '',
                 id_facture: avoir.id_facture || '',
                 motif: avoir.motif || '',
                 montant_ht: avoir.montant_ht || 0,
                 montant_ttc: avoir.montant_ttc || 0,
-                statut: avoir.statut || 'EN_ATTENTE'
+                statut: avoir.statut || 'EN_ATTENTE',
+                lignes: avoir.lignes || []  // IMPORTANT: Initialiser les lignes
             });
+            
+            // Charger les lignes si elles existent
+            if (avoir.lignes && avoir.lignes.length > 0) {
+                setSelectedArticles(avoir.lignes);
+            }
             
             if (avoir.id_client) {
                 loadFacturesClient(avoir.id_client);

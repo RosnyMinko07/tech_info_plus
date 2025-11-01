@@ -4,8 +4,9 @@
 Routes API pour le comptoir (vente rapide)
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import date, datetime
@@ -14,9 +15,29 @@ import os
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from database_mysql import get_db, Article, MouvementStock, VenteComptoir, LigneVente, Facture, LigneFacture, Utilisateur, Client
+from database_mysql import get_db, Article, MouvementStock, Facture, LigneFacture, Utilisateur, Client
 
 router = APIRouter(prefix="/api/comptoir", tags=["Comptoir"])
+
+
+def get_current_user_id(request: Request) -> int:
+    """Extraire l'ID utilisateur du token JWT"""
+    try:
+        auth_header = request.headers.get('Authorization')
+        if auth_header and auth_header.startswith('Bearer '):
+            token = auth_header.replace('Bearer ', '')
+            # Extraire l'ID utilisateur du token (format: token_{id}_{timestamp})
+            parts = token.split('_')
+            if len(parts) >= 2:
+                id_utilisateur = int(parts[1])
+                print(f"  🔑 ID utilisateur extrait du token: {id_utilisateur}")
+                return id_utilisateur
+    except (ValueError, IndexError) as e:
+        print(f"   ⚠️ Erreur extraction ID utilisateur: {e}")
+    
+    # Retourner 1 (admin) par défaut si le token est invalide
+    print(f"  ⚠️ Utilisation de l'utilisateur par défaut (ID: 1)")
+    return 1
 
 
 class ArticleComptoirResponse(BaseModel):
@@ -90,7 +111,7 @@ async def get_articles_populaires(
 @router.get("/verifier-ventes-aujourd-hui")
 async def verifier_ventes_aujourdhui(db: Session = Depends(get_db)):
     """
-    Vérifie s'il y a eu des ventes aujourd'hui (comme Python ligne 184-204)
+    Vérifie s'il y a eu des ventes aujourd'hui et retourne la liste des articles vendus (comme Python ligne 184-204)
     """
     try:
         aujourd_hui = date.today()
@@ -101,9 +122,26 @@ async def verifier_ventes_aujourdhui(db: Session = Depends(get_db)):
             Facture.type_facture == 'COMPTOIR'
         ).count()
         
+        # Récupérer les articles vendus aujourd'hui (pour le mode retour)
+        articles_vendus = []
+        if nombre_ventes > 0:
+            ventes_factures = db.query(Facture.id_facture).filter(
+                Facture.date_facture == aujourd_hui,
+                Facture.type_facture == 'COMPTOIR'
+            ).subquery()
+            
+            articles_vendus = db.query(
+                LigneFacture.id_article
+            ).filter(
+                LigneFacture.id_facture.in_(ventes_factures)
+            ).distinct().all()
+            
+            articles_vendus = [row[0] for row in articles_vendus]
+        
         return {
             "ventes_aujourd_hui": nombre_ventes > 0,
-            "nombre_ventes": nombre_ventes
+            "nombre_ventes": nombre_ventes,
+            "articles_vendus": [{"id_article": aid} for aid in articles_vendus]
         }
         
     except Exception as e:
@@ -124,35 +162,115 @@ async def get_ventes_aujourdhui(db: Session = Depends(get_db)):
     ).all()
     
     # Calculer total en tenant compte des retours (négatifs) - COMME PYTHON ligne 910-916
+    # 🔥 CORRECTION: Utiliser total_ttc (montant réel vendu) au lieu de montant_avance (montant reçu)
     total_jour = sum(
-        float(v.montant_avance or 0) if v.type_facture == 'COMPTOIR' else -float(v.montant_avance or 0)
+        float(v.total_ttc or 0) if v.type_facture == 'COMPTOIR' else -float(v.total_ttc or 0)
         for v in ventes
     )
     nb_ventes = len(ventes)
     
+    # Préparer les détails des ventes avec leurs lignes
+    ventes_detaillees = []
+    for v in ventes:
+        lignes = db.query(LigneFacture).filter(
+            LigneFacture.id_facture == v.id_facture
+        ).all()
+        
+        ventes_detaillees.append({
+            "id_facture": v.id_facture,
+            "numero_facture": v.numero_facture,
+            "montant_total": float(v.montant_ttc or 0),
+            "montant_avance": float(v.montant_avance or 0),  # Montant reçu
+            "type_facture": v.type_facture,
+            "date_vente": v.created_at.isoformat() if v.created_at else None,
+            "heure": v.created_at.strftime("%H:%M") if v.created_at else "",
+            "notes": v.notes or "",
+            "lignes": [
+                {
+                    "id_ligne_facture": ligne.id_ligne_facture,
+                    "id_article": ligne.id_article,
+                    "quantite": ligne.quantite,
+                    "prix_unitaire": float(ligne.prix_unitaire or 0),
+                    "montant_ht": float(ligne.montant_ht or 0)
+                }
+                for ligne in lignes
+            ]
+        })
+    
     return {
         "total_jour": total_jour,
         "nb_ventes": nb_ventes,
-        "ventes": [
-            {
-                "numero": v.numero_facture,
-                "montant": float(v.montant_ttc or 0),
-                "heure": v.created_at.strftime("%H:%M") if v.created_at else ""
-            }
-            for v in ventes
-        ]
+        "ventes": ventes_detaillees
     }
 
 
 @router.post("/vente")
 async def creer_vente_comptoir(
     vente: VenteComptoirRequest,
+    request: Request,
     db: Session = Depends(get_db)
 ):
     """
     Crée une vente comptoir rapide
     """
     try:
+        # Récupérer l'ID utilisateur connecté
+        id_utilisateur = get_current_user_id(request)
+        print(f"  🔑 Vente créée par l'utilisateur ID: {id_utilisateur}")
+        # 🔥 VÉRIFICATION RETOUR : Autoriser SEULEMENT les articles vendus aujourd'hui
+        if vente.type_vente == "RETOUR":
+            aujourd_hui = date.today()
+            
+            for item in vente.articles:
+                # Vérifier si cet article a été vendu aujourd'hui
+                vente_article_aujourdhui = db.query(LigneFacture).join(
+                    Facture, LigneFacture.id_facture == Facture.id_facture
+                ).filter(
+                    Facture.date_facture == aujourd_hui,
+                    Facture.type_facture == 'COMPTOIR',
+                    LigneFacture.id_article == item.id_article
+                ).first()
+                
+                if not vente_article_aujourdhui:
+                    # Article pas vendu aujourd'hui, REFUSER le retour
+                    article = db.query(Article).filter(Article.id_article == item.id_article).first()
+                    article_nom = article.designation if article else f"Article {item.id_article}"
+                    raise HTTPException(
+                        status_code=400, 
+                        detail=f"❌ RETOUR REFUSÉ : L'article '{article_nom}' n'a pas été vendu aujourd'hui. Seuls les articles vendus aujourd'hui peuvent être retournés."
+                    )
+                
+                # Vérifier que la quantité retournée ne dépasse pas la quantité vendue
+                total_vendu_aujourdhui = db.query(
+                    func.sum(LigneFacture.quantite)
+                ).join(
+                    Facture, LigneFacture.id_facture == Facture.id_facture
+                ).filter(
+                    Facture.date_facture == aujourd_hui,
+                    Facture.type_facture == 'COMPTOIR',
+                    LigneFacture.id_article == item.id_article
+                ).scalar() or 0
+                
+                total_retourne_aujourdhui = db.query(
+                    func.sum(LigneFacture.quantite)
+                ).join(
+                    Facture, LigneFacture.id_facture == Facture.id_facture
+                ).filter(
+                    Facture.date_facture == aujourd_hui,
+                    Facture.type_facture == 'RETOUR',
+                    LigneFacture.id_article == item.id_article
+                ).scalar() or 0
+                
+                quantite_disponible_retour = total_vendu_aujourdhui - total_retourne_aujourdhui
+                
+                if item.quantite > quantite_disponible_retour:
+                    article = db.query(Article).filter(Article.id_article == item.id_article).first()
+                    article_nom = article.designation if article else f"Article {item.id_article}"
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"❌ RETOUR REFUSÉ : Quantité invalide pour '{article_nom}'. Vendu aujourd'hui: {total_vendu_aujourdhui}, Déjà retourné: {total_retourne_aujourdhui}, Disponible pour retour: {quantite_disponible_retour}"
+                    )
+        
         # Calculer les totaux
         montant_ht = 0.0
         montant_ttc = 0.0
@@ -162,8 +280,21 @@ async def creer_vente_comptoir(
             if not article:
                 raise HTTPException(status_code=404, detail=f"Article {item.id_article} non trouvé")
             
-            # PAS DE VÉRIFICATION DE STOCK comme Python (ligne 1238-1291)
-            # Le stock peut devenir négatif, c'est géré après
+            # 🔥 VÉRIFICATION DE STOCK pour les produits
+            if article.type_article == 'PRODUIT':
+                # Vérifier que le stock est suffisant
+                if item.quantite > article.stock_actuel:
+                    raise HTTPException(
+                        status_code=400, 
+                        detail=f"❌ Stock insuffisant pour '{article.designation}'. Stock disponible: {article.stock_actuel}, Quantité demandée: {item.quantite}"
+                    )
+                
+                # Vérifier que le stock n'est pas à zéro
+                if article.stock_actuel <= 0:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"❌ Stock épuisé pour '{article.designation}'. Impossible de vendre un article en rupture de stock."
+                    )
             
             montant_ligne = item.quantite * item.prix_unitaire
             montant_ht += montant_ligne
@@ -194,31 +325,20 @@ async def creer_vente_comptoir(
             numero_facture=numero_facture,
             type_facture=vente.type_vente,  # COMPTOIR ou RETOUR
             date_facture=date.today(),
-            total_ht=montant_ht,
-            total_tva=0.0,  # Pas de TVA au comptoir
-            total_ttc=montant_ttc,
-            montant_avance=abs(montant_ttc),  # Toujours payé cash au comptoir
+            montant_ht=montant_ht,  # Utiliser montant_ht, pas total_ht
+            montant_ttc=montant_ttc,  # Utiliser montant_ttc, pas total_ttc
+            montant_avance=vente.montant_recu if vente.type_vente == 'COMPTOIR' else abs(montant_ttc),  # Montant reçu au comptoir
             montant_reste=0,
             statut="Payée",
             mode_paiement="ESPÈCES",
             notes=vente.notes,
-            id_client=client_comptoir.id_client  # Client COMPTOIR (comme Python ligne 1267)
+            id_client=client_comptoir.id_client,  # Client COMPTOIR (comme Python ligne 1267)
+            id_utilisateur=id_utilisateur  # 🔥 ID de l'utilisateur connecté
         )
         db.add(nouvelle_facture)
         db.flush()
         
-        # 2. Créer aussi dans vente_comptoir (pour vérifications)
-        nouvelle_vente_comptoir = VenteComptoir(
-            numero_vente=numero_facture,  # Même numéro que la facture
-            date_vente=datetime.now(),
-            montant_total=montant_ttc,
-            mode_paiement="ESPÈCES" if vente.type_vente != "RETOUR" else "REMBOURSEMENT",
-            notes=vente.notes
-        )
-        db.add(nouvelle_vente_comptoir)
-        db.flush()
-        
-        # 3. Créer les lignes (dans les 2 tables) et mettre à jour le stock
+        # 2. Créer les lignes dans ligne_facture et mettre à jour le stock
         for item in vente.articles:
             article = db.query(Article).filter(Article.id_article == item.id_article).first()
             
@@ -228,20 +348,9 @@ async def creer_vente_comptoir(
                 id_article=item.id_article,
                 quantite=item.quantite,
                 prix_unitaire=item.prix_unitaire,
-                total_ht=item.quantite * item.prix_unitaire,
-                montant_ht=item.quantite * item.prix_unitaire
-            )
-            db.add(ligne_facture)
-            
-            # Créer ligne dans ligne_vente (pour vérifications)
-            ligne_vente = LigneVente(
-                id_vente=nouvelle_vente_comptoir.id_vente,
-                id_article=item.id_article,
-                quantite=item.quantite,
-                prix_unitaire=item.prix_unitaire,
                 total_ht=item.quantite * item.prix_unitaire
             )
-            db.add(ligne_vente)
+            db.add(ligne_facture)
             
             # Mettre à jour le stock pour les produits (comme Python ligne 1293-1355)
             if article.type_article == "PRODUIT":
@@ -282,7 +391,11 @@ async def creer_vente_comptoir(
         raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Erreur création vente: {str(e)}")
+        import traceback
+        error_detail = traceback.format_exc()
+        print(f"❌ ERREUR CRÉATION VENTE:")
+        print(error_detail)
+        raise HTTPException(status_code=500, detail=f"Erreur création vente: {str(e)}\n{error_detail}")
 
 
 @router.get("/ventes")
@@ -333,11 +446,16 @@ async def get_ventes_comptoir(
                 LigneFacture.id_facture == id_facture
             ).all()
             
+            # Récupérer le montant avance de la facture
+            facture_obj = db.query(Facture).filter(Facture.id_facture == id_facture).first()
+            montant_avance = float(facture_obj.montant_avance or 0) if facture_obj else 0
+            
             ventes_data.append({
                 "id_facture": id_facture,
                 "numero_facture": numero_facture,
                 "date_vente": created_at.isoformat() if created_at else None,
                 "montant_total": float(total_ttc or 0),
+                "montant_avance": montant_avance,  # Montant reçu
                 "type_facture": type_facture,
                 "client_nom": "Retour Comptoir" if type_facture == "RETOUR" else "Comptoir",
                 "vendeur": nom_utilisateur or "Système",
@@ -389,6 +507,7 @@ async def get_vente_by_id(
             "numero_facture": facture.numero_facture,
             "date_vente": facture.created_at.isoformat() if facture.created_at else None,
             "montant_total": float(facture.montant_ttc or 0),
+            "montant_avance": float(facture.montant_avance or 0),  # Montant reçu
             "type_facture": facture.type_facture,
             "notes": facture.notes,
             "lignes": [
@@ -397,7 +516,7 @@ async def get_vente_by_id(
                     "id_article": ligne[0].id_article,
                     "quantite": ligne[0].quantite,
                     "prix_unitaire": float(ligne[0].prix_unitaire or 0),
-                    "total_ht": float(ligne[0].montant_ttc or 0),
+                    "total_ht": float(ligne[0].total_ht or ligne[0].montant_ht or 0),
                     "article_nom": ligne[1] or "Article supprimé"
                 }
                 for ligne in lignes
@@ -455,12 +574,6 @@ async def supprimer_vente_comptoir(
         
         # Supprimer les lignes de facture
         db.query(LigneFacture).filter(LigneFacture.id_facture == id_facture).delete()
-        
-        # Supprimer aussi de vente_comptoir si existe
-        db.query(VenteComptoir).filter(VenteComptoir.numero_vente == numero_facture).delete()
-        db.query(LigneVente).filter(LigneVente.id_vente.in_(
-            db.query(VenteComptoir.id_vente).filter(VenteComptoir.numero_vente == numero_facture)
-        )).delete(synchronize_session=False)
         
         # Supprimer la facture
         db.delete(facture)

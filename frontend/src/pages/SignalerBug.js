@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { FaBug, FaPaperPlane, FaEraser } from 'react-icons/fa';
-import axios from 'axios';
+import api from '../services/api';
 import '../styles/SignalerBug.css';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+// Utiliser l'instance API (URL dynamique)
 
 function SignalerBug() {
   const [formData, setFormData] = useState({
@@ -22,10 +22,7 @@ function SignalerBug() {
 
   const loadEntrepriseConfig = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/entreprise/config`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/api/entreprise/config');
       setEntreprise(response.data);
     } catch (error) {
       console.error('Erreur chargement config:', error);
@@ -48,18 +45,9 @@ function SignalerBug() {
 
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      
       console.log('🐛 Envoi du signalement...');
-      console.log('Token:', token ? `${token.substring(0, 20)}...` : 'AUCUN TOKEN');
       console.log('Données:', formData);
-      console.log('URL:', `${API_URL}/api/bugs`);
-      
-      const response = await axios.post(
-        `${API_URL}/api/bugs`,
-        formData,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await api.post('/api/bugs', formData);
 
       console.log('✅ Réponse reçue:', response.data);
 

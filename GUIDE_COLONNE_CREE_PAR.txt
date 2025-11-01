@@ -1,0 +1,70 @@
+===========================================================
+GUIDE : Colonne "Créé par" dans les listes Dev et Factures
+===========================================================
+
+FONCTIONNALITÉ AJOUTÉE :
+-----------------------
+Les listes de devis et de factures affichent maintenant qui a créé chaque document.
+
+PROBLÈME RÉSOLU :
+---------------
+Avant, on ne savait pas qui avait créé un devis ou une facture.
+
+SOLUTION APPLIQUÉE :
+-------------------
+
+1. BASE DE DONNÉES :
+   - Ajout de la colonne `id_utilisateur` à la table `devis`
+   - Migration : backend/ajouter_id_utilisateur_devis.py
+   - Tous les devis existants ont été assignés à l'admin (ID: 1)
+
+2. MODÈLE SQLALCHEMY (backend/database_mysql.py) :
+   - Ajout de `id_utilisateur = Column(Integer, ForeignKey('utilisateur.id_utilisateur'))` à la classe Devis
+
+3. BACKEND (backend/app.py) :
+   - Fonction utilitaire `get_current_user_id()` pour extraire l'ID utilisateur du token JWT
+   - `create_devis()` : Assigne automatiquement l'utilisateur connecté lors de la création
+   - `create_facture()` : Assigne automatiquement l'utilisateur connecté lors de la création
+   - `valider_devis()` : La facture créée hérite de l'utilisateur qui a créé le devis
+   - `get_devis()` : Retourne le nom de l'utilisateur créateur dans le champ `cree_par`
+   - `get_factures()` : Retourne le nom de l'utilisateur créateur dans le champ `cree_par`
+
+4. FRONTEND :
+   - frontend/src/pages/Devis.js : Ajout de la colonne "CRÉÉ PAR" dans le tableau
+   - frontend/src/pages/Facturation.js : Ajout de la colonne "CRÉÉ PAR" dans le tableau
+   - Affichage en bleu et gras pour une meilleure visibilité
+
+DONNÉES AFFICHÉES :
+------------------
+- Pour les devis : Nom de l'utilisateur qui a créé le devis
+- Pour les factures : Nom de l'utilisateur qui a créé la facture
+- Par défaut : "Système" si aucune information disponible
+
+LOGIQUE :
+--------
+- Chaque fois qu'un utilisateur crée un devis/facture, son ID est automatiquement 
+  enregistré dans la base de données
+- Le token JWT (format: token_{id}_{timestamp}) contient l'ID utilisateur
+- L'interface affiche le nom d'utilisateur récupéré depuis la table Utilisateur
+- Si l'admin crée un document, il verra son propre nom affiché
+
+FICHIERS MODIFIÉS :
+------------------
+- backend/app.py (fonction get_current_user_id, create_devis, create_facture, valider_devis, get_devis, get_factures)
+- backend/database_mysql.py (ajout id_utilisateur à Devis)
+- backend/ajouter_id_utilisateur_devis.py (nouveau - migration)
+- frontend/src/pages/Devis.js (colonne "CRÉÉ PAR")
+- frontend/src/pages/Facturation.js (colonne "CRÉÉ PAR")
+
+TEST :
+-----
+1. Connectez-vous avec votre compte utilisateur
+2. Créez un devis
+3. Vérifiez que la colonne "CRÉÉ PAR" affiche votre nom
+4. Créez une facture
+5. Vérifiez que la colonne "CRÉÉ PAR" affiche votre nom
+6. Si vous transformez un devis en facture, la facture hérite de l'utilisateur du devis
+
+===========================================================
+
+

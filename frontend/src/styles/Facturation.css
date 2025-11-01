@@ -194,7 +194,7 @@
 
 .table-headers {
   display: grid;
-  grid-template-columns: 1fr 2fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: 1fr 2fr 1fr 1fr 1fr 1fr 1.5fr;
   background-color: var(--bg-tertiaire);
   height: 35px;
   border-bottom: 1px solid var(--bordure);
@@ -222,7 +222,7 @@
 
 .table-row {
   display: grid;
-  grid-template-columns: 1fr 2fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: 1fr 2fr 1fr 1fr 1fr 1fr 1.5fr;
   min-height: 45px;
   border-bottom: 1px solid var(--bordure);
   align-items: center;
@@ -589,12 +589,13 @@
   
   .table-headers,
   .table-row {
-    grid-template-columns: 1fr 1fr;
-    font-size: 12px;
+    grid-template-columns: 1fr 2fr 1fr 1fr 1fr 1fr 1.5fr;
+    font-size: 11px;
   }
   
+  /* Garder toutes les colonnes mais réduire la largeur */
   .table-cell:nth-child(n+3) {
-    display: none;
+    font-size: 11px;
   }
   
   .facturation-modal-container {

@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # Base de données MySQL (Désactivée)
+  mysql:
+    image: mysql:8.0
+    container_name: tech_info_plus_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password_2025
+      MYSQL_DATABASE: tech_info_plus
+      MYSQL_USER: tech_user
+      MYSQL_PASSWORD: tech_password_2025
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - tech_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_password_2025"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend FastAPI (Désactivé)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tech_info_plus_backend
+    restart: always
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: tech_user
+      MYSQL_PASSWORD: tech_password_2025
+      MYSQL_DATABASE: tech_info_plus
+    ports:
+      - "8000:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - ./data:/app/data
+      - ./reports:/app/reports
+    networks:
+      - tech_network
+
+  # Frontend React (Désactivé)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tech_info_plus_frontend
+    restart: always
+    environment:
+      REACT_APP_API_URL: http://localhost:8000
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - tech_network
+    stdin_open: true
+    tty: true
+
+networks:
+  tech_network:
+    driver: bridge
+
+volumes:
+  mysql_data:

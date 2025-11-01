@@ -5,7 +5,21 @@
 
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+// 🔥 Détection automatique de l'URL du backend
+// Si on accède via une IP (pas localhost), utiliser cette IP pour le backend aussi
+const getApiBaseUrl = () => {
+  const hostname = window.location.hostname;
+  
+  // Si on accède via localhost, utiliser localhost pour le backend
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:8000';
+  }
+  
+  // Sinon, utiliser l'IP actuelle avec le port 8000
+  return `http://${hostname}:8000`;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Configuration axios
 const api = axios.create({
@@ -73,8 +87,13 @@ export const clientService = {
     const response = await api.put(`/api/clients/${id}`, data);
     return response.data;
   },
-  delete: async (id) => {
-    const response = await api.delete(`/api/clients/${id}`);
+  delete: async (id, options = {}) => {
+    const params = new URLSearchParams();
+    if (options.force) {
+      params.append('force', 'true');
+    }
+    const url = `/api/clients/${id}${params.toString() ? '?' + params.toString() : ''}`;
+    const response = await api.delete(url);
     return response.data;
   },
   search: async (query) => {
@@ -163,6 +182,10 @@ export const factureService = {
   create: (data) => api.post('/api/factures', data),
   update: (id, data) => api.put(`/api/factures/${id}`, data),
   delete: (id) => api.delete(`/api/factures/${id}`),
+  annuler: async (id) => {
+    const response = await api.put(`/api/factures/${id}/annuler`);
+    return response.data;
+  },
   generatePDF: (id, applyPrecompte = true) => 
     api.post(`/api/pdf/facture/${id}`, null, {
       params: { apply_precompte: applyPrecompte },
@@ -195,6 +218,10 @@ export const devisService = {
   },
   delete: async (id) => {
     const response = await api.delete(`/api/devis/${id}`);
+    return response.data;
+  },
+  annuler: async (id) => {
+    const response = await api.put(`/api/devis/${id}/annuler`);
     return response.data;
   },
   valider: async (id) => {
@@ -235,6 +262,23 @@ export const comptoirService = {
     const response = await api.get('/api/comptoir/stats');
     return response.data;
   },
+  // 🔥 Ajouts pour historique/détails/suppression/vérification
+  getHistorique: async (limit = 50) => {
+    const response = await api.get('/api/comptoir/ventes', { params: { limit } });
+    return response.data;
+  },
+  getVenteDetails: async (idFacture) => {
+    const response = await api.get(`/api/comptoir/ventes/${idFacture}`);
+    return response.data;
+  },
+  deleteVente: async (idFacture) => {
+    const response = await api.delete(`/api/comptoir/ventes/${idFacture}`);
+    return response.data;
+  },
+  verifierVentesAujourdhui: async () => {
+    const response = await api.get('/api/comptoir/verifier-ventes-aujourd-hui');
+    return response.data;
+  },
 };
 
 // ==================== RÈGLEMENTS ====================
@@ -262,8 +306,9 @@ export const reglementService = {
   },
 };
 
-// ==================== AVOIRS ====================
+// ==================== AVOIRS (🔒 MODULE DÉSACTIVÉ) ====================
 
+/* 🔒 MODULE AVOIRS DÉSACTIVÉ
 export const avoirService = {
   getAll: async (params = {}) => {
     const response = await api.get('/api/avoirs', { params });
@@ -302,6 +347,7 @@ export const avoirService = {
     return response.data;
   },
 };
+*/
 
 // ==================== STOCK ====================
 

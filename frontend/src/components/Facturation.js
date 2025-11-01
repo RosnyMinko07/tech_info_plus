@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import './Facturation.css';
+import { confirmDelete, showError, showSuccess } from '../utils/sweetAlertHelper';
 
 const FacturationComplete = () => {
   // ==================== ÉTATS ====================
@@ -40,6 +41,15 @@ const FacturationComplete = () => {
   const [articleSelectionne, setArticleSelectionne] = useState('');
   const [quantite, setQuantite] = useState(1);
   
+  // 🔥 Modale création client rapide
+  const [showClientModal, setShowClientModal] = useState(false);
+  const [newClient, setNewClient] = useState({
+    nom: '',
+    telephone: '',
+    email: '',
+    adresse: ''
+  });
+  
   // Calculs
   const [totaux, setTotaux] = useState({
     total_ht: 0,
@@ -67,26 +77,50 @@ const FacturationComplete = () => {
   const chargerFactures = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:8000/api/factures', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/api/factures');
       setFactures(response.data);
       calculerStatistiques(response.data);
     } catch (error) {
       console.error('Erreur chargement factures:', error);
-      alert('Erreur lors du chargement des factures');
+      showError('Erreur lors du chargement des factures');
     } finally {
       setLoading(false);
     }
   };
 
+  // 🔥 Créer un client rapidement
+  const handleCreateClient = () => {
+    setShowClientModal(true);
+  };
+  
+  const handleSaveNewClient = async () => {
+    if (!newClient.nom) {
+      alert('Le nom du client est obligatoire');
+      return;
+    }
+    
+    try {
+      const response = await api.post('/api/clients', {
+        nom: newClient.nom,
+        telephone: newClient.telephone || '',
+        email: newClient.email || '',
+        adresse: newClient.adresse || '',
+        type_client: 'Particulier'
+      });
+      
+      await chargerClients(); // Recharger la liste
+      setFormData({...formData, id_client: response.data.id_client}); // Sélectionner automatiquement
+      setShowClientModal(false);
+      setNewClient({ nom: '', telephone: '', email: '', adresse: '' });
+    } catch (error) {
+      console.error('Erreur création client:', error);
+      alert('Erreur lors de la création du client');
+    }
+  };
+  
   const chargerClients = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:8000/api/clients', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/api/clients');
       setClients(response.data);
     } catch (error) {
       console.error('Erreur chargement clients:', error);
@@ -95,10 +129,7 @@ const FacturationComplete = () => {
 
   const chargerArticles = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:8000/api/articles', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/api/articles');
       setArticles(response.data);
     } catch (error) {
       console.error('Erreur chargement articles:', error);
@@ -107,10 +138,7 @@ const FacturationComplete = () => {
 
   const genererNumeroFacture = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:8000/api/factures/generer-numero', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/api/factures/generer-numero');
       setFormData(prev => ({ ...prev, numero_facture: response.data.numero }));
     } catch (error) {
       console.error('Erreur génération numéro:', error);
@@ -189,7 +217,7 @@ const FacturationComplete = () => {
   // ==================== GESTION DES ARTICLES ====================
   const ajouterArticle = () => {
     if (!articleSelectionne || quantite <= 0) {
-      alert('Veuillez sélectionner un article et une quantité valide');
+      showError('Veuillez sélectionner un article et une quantité valide');
       return;
     }
 
@@ -261,10 +289,7 @@ const FacturationComplete = () => {
 
   const chargerLignesFacture = async (idFacture) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:8000/api/factures/${idFacture}/lignes`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get(`/api/factures/${idFacture}/lignes`);
       setLignesFacture(response.data);
     } catch (error) {
       console.error('Erreur chargement lignes:', error);
@@ -279,7 +304,7 @@ const FacturationComplete = () => {
 
   const enregistrerFacture = async () => {
     if (!formData.id_client || lignesFacture.length === 0) {
-      alert('Veuillez sélectionner un client et ajouter au moins un article');
+      showError('Veuillez sélectionner un client et ajouter au moins un article');
       return;
     }
 
@@ -292,49 +317,37 @@ const FacturationComplete = () => {
     };
 
     try {
-      const token = localStorage.getItem('token');
-      
       if (factureSelectionnee) {
         // Modification
-        await axios.put(
-          `http://localhost:8000/api/factures/${factureSelectionnee.id_facture}`,
-          factureData,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        alert('Facture modifiée avec succès');
+        await api.put(`/api/factures/${factureSelectionnee.id_facture}`,
+          factureData);
+        showSuccess('Facture modifiée avec succès');
       } else {
         // Création
-        await axios.post(
-          'http://localhost:8000/api/factures',
-          factureData,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        alert('Facture créée avec succès');
+        await api.post('/api/factures',
+          factureData);
+        showSuccess('Facture créée avec succès');
       }
 
       fermerFormulaire();
       chargerFactures();
     } catch (error) {
       console.error('Erreur enregistrement:', error);
-      alert('Erreur lors de l\'enregistrement de la facture');
+      showError('Erreur lors de l\'enregistrement de la facture');
     }
   };
 
   const supprimerFacture = async (idFacture) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette facture ?')) {
-      return;
-    }
+    const confirmed = await confirmDelete('cette facture');
+    if (!confirmed) return;
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:8000/api/factures/${idFacture}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      alert('Facture supprimée avec succès');
+      await api.delete(`/api/factures/${idFacture}`);
+      showSuccess('Facture supprimée avec succès');
       chargerFactures();
     } catch (error) {
       console.error('Erreur suppression:', error);
-      alert('Erreur lors de la suppression de la facture');
+      showError('Erreur lors de la suppression de la facture');
     }
   };
 
@@ -692,5 +705,94 @@ const FacturationComplete = () => {
     </div>
   );
 };
+
+            {/* 🔥 Modale création client rapide */}
+            {showClientModal && (
+              <div style={{
+                position: 'fixed',
+                top: 0, left: 0, right: 0, bottom: 0,
+                background: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000
+              }} onClick={() => setShowClientModal(false)}>
+                <div style={{
+                  background: 'white',
+                  padding: '30px',
+                  borderRadius: '10px',
+                  maxWidth: '500px',
+                  width: '90%'
+                }} onClick={(e) => e.stopPropagation()}>
+                  <h2 style={{ marginBottom: '20px' }}>➕ Nouveau Client</h2>
+                  
+                  <div style={{ marginBottom: '15px' }}>
+                    <label style={{ display: 'block', marginBottom: '5px' }}>Nom *</label>
+                    <input
+                      type="text"
+                      value={newClient.nom}
+                      onChange={(e) => setNewClient({...newClient, nom: e.target.value})}
+                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                      placeholder="Nom du client"
+                    />
+                  </div>
+                  
+                  <div style={{ marginBottom: '15px' }}>
+                    <label style={{ display: 'block', marginBottom: '5px' }}>Téléphone</label>
+                    <input
+                      type="text"
+                      value={newClient.telephone}
+                      onChange={(e) => setNewClient({...newClient, telephone: e.target.value})}
+                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                      placeholder="Téléphone"
+                    />
+                  </div>
+                  
+                  <div style={{ marginBottom: '15px' }}>
+                    <label style={{ display: 'block', marginBottom: '5px' }}>Email</label>
+                    <input
+                      type="email"
+                      value={newClient.email}
+                      onChange={(e) => setNewClient({...newClient, email: e.target.value})}
+                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                      placeholder="Email"
+                    />
+                  </div>
+                  
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', marginBottom: '5px' }}>Adresse</label>
+                    <input
+                      type="text"
+                      value={newClient.adresse}
+                      onChange={(e) => setNewClient({...newClient, adresse: e.target.value})}
+                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                      placeholder="Adresse"
+                    />
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                    <button 
+                      type="button"
+                      onClick={() => setShowClientModal(false)}
+                      style={{ padding: '10px 20px', background: '#ccc', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                    >
+                      Annuler
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={handleSaveNewClient}
+                      style={{ padding: '10px 20px', background: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                    >
+                      ✓ Enregistrer
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
 
 export default FacturationComplete;
