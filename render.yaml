@@ -9,20 +9,12 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
-      - key: MYSQL_HOST
-        sync: false  # Vous devrez configurer cela dans le dashboard Render
-      - key: MYSQL_PORT
-        value: 3306
-      - key: MYSQL_USER
-        sync: false
-      - key: MYSQL_PASSWORD
-        sync: false
-      - key: MYSQL_DATABASE
-        sync: false
+      - key: DATABASE_URL
+        sync: false  # À configurer dans le dashboard Render
       - key: ENVIRONMENT
         value: production
       - key: SECRET_KEY
         generateValue: true
       - key: FRONTEND_URL
-        value: https://tech-info-plus.netlify.app  # À changer avec votre URL Netlify
+        value: https://tech-info-plus.vercel.app  # URL de votre frontend Vercel
 
