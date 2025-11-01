@@ -1,0 +1,108 @@
+═══════════════════════════════════════════════════════════════════
+CONFIGURATION BACKEND RENDER AVEC SUPABASE POSTGRESQL
+═══════════════════════════════════════════════════════════════════
+
+ÉTAPE 1: CRÉER LA BASE DE DONNÉES SUR SUPABASE
+───────────────────────────────────────────────────────────────────
+
+1. Allez sur https://supabase.com/dashboard
+2. Sélectionnez votre projet
+3. Allez dans "SQL Editor"
+4. Copiez et exécutez le contenu du fichier "backend/supabase_schema.sql"
+5. Cliquez sur "RUN" pour créer toutes les tables
+
+
+ÉTAPE 2: RÉCUPÉRER LA CHAÎNE DE CONNEXION POSTGRESQL
+───────────────────────────────────────────────────────────────────
+
+1. Dans Supabase, allez dans "Project Settings" > "Database"
+2. Cherchez la section "Connection string"
+3. Sélectionnez "URI" (pas "Session pooler")
+4. Copiez la chaîne qui ressemble à:
+   postgresql://postgres:[YOUR-PASSWORD]@db.cerxxxswrodgutarejit.supabase.co:5432/postgres
+
+5. Remplacez [YOUR-PASSWORD] par votre mot de passe de base de données
+
+
+ÉTAPE 3: CONFIGURER LES VARIABLES D'ENVIRONNEMENT SUR RENDER
+───────────────────────────────────────────────────────────────────
+
+Sur le dashboard Render de votre service backend:
+
+1. Allez dans "Environment" > "Environment Variables"
+
+2. Ajoutez UNIQUEMENT cette variable:
+
+   Key: DATABASE_URL
+   Value: postgresql://postgres:[VOTRE-MOT-DE-PASSE]@db.cerxxxswrodgutarejit.supabase.co:5432/postgres
+
+   ⚠️ IMPORTANT: Remplacez [VOTRE-MOT-DE-PASSE] par votre vrai mot de passe Supabase
+
+3. NE PAS ajouter ces variables (elles ne sont plus nécessaires):
+   - MYSQL_HOST
+   - MYSQL_PORT
+   - MYSQL_USER
+   - MYSQL_PASSWORD
+   - MYSQL_DATABASE
+
+
+ÉTAPE 4: VÉRIFIER LA CONFIGURATION
+───────────────────────────────────────────────────────────────────
+
+Le fichier backend/database_mysql.py est déjà configuré pour:
+- Utiliser DATABASE_URL en priorité (ligne 26)
+- Se connecter à PostgreSQL si DATABASE_URL est défini
+- Utiliser psycopg2-binary pour PostgreSQL (dans requirements.txt)
+
+
+ÉTAPE 5: REDÉPLOYER LE BACKEND
+───────────────────────────────────────────────────────────────────
+
+1. Sur Render, allez dans votre service backend
+2. Cliquez sur "Manual Deploy" > "Deploy latest commit"
+3. Attendez que le déploiement se termine
+4. Vérifiez les logs pour confirmer la connexion
+
+
+VÉRIFICATION DES LOGS
+───────────────────────────────────────────────────────────────────
+
+Dans les logs Render, vous devriez voir:
+✅ "Starting Uvicorn..."
+✅ "Application startup complete"
+
+Vous NE devriez PAS voir:
+❌ "Exception in ASGI application"
+❌ "sqlalchemy.engine.base.py"
+❌ Erreurs de connexion
+
+
+DÉPANNAGE
+───────────────────────────────────────────────────────────────────
+
+Si vous avez toujours des erreurs:
+
+1. Vérifiez que DATABASE_URL est bien défini sur Render
+2. Vérifiez que le mot de passe dans DATABASE_URL est correct
+3. Vérifiez que psycopg2-binary est dans requirements.txt
+4. Vérifiez que pymysql a été supprimé de requirements.txt
+5. Testez la connexion depuis Supabase SQL Editor
+
+
+EXEMPLE DE DATABASE_URL CORRECT
+───────────────────────────────────────────────────────────────────
+
+postgresql://postgres:VotreMotDePasse123@db.abcdefghijklmnop.supabase.co:5432/postgres
+
+⚠️ Remplacez "VotreMotDePasse123" par votre vrai mot de passe Supabase
+
+
+NOTES IMPORTANTES
+───────────────────────────────────────────────────────────────────
+
+1. PostgreSQL utilise le port 5432 (pas 3306 comme MySQL)
+2. Le nom de la base de données est "postgres" par défaut sur Supabase
+3. Le driver est "postgresql://" (pas "mysql+pymysql://")
+4. psycopg2-binary est nécessaire pour PostgreSQL
+5. DATABASE_URL doit être défini comme variable d'environnement sur Render
+

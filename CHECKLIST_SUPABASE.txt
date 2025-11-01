@@ -1,0 +1,55 @@
+═══════════════════════════════════════════════════════════════════
+CHECKLIST RAPIDE - CONNEXION SUPABASE SUR RENDER
+═══════════════════════════════════════════════════════════════════
+
+☐ 1. SUPABASE - CRÉER LES TABLES
+   - Ouvrir Supabase SQL Editor
+   - Copier le contenu de backend/supabase_schema.sql
+   - Exécuter le script
+   - Vérifier que toutes les tables sont créées
+
+☐ 2. SUPABASE - RÉCUPÉRER LA CONNEXION
+   - Project Settings > Database
+   - Connection string > URI
+   - Copier la chaîne postgresql://...
+   - Noter votre mot de passe
+
+☐ 3. RENDER - CONFIGURER DATABASE_URL
+   - Aller dans Environment Variables
+   - Ajouter: DATABASE_URL
+   - Valeur: postgresql://postgres:[MOT-DE-PASSE]@db.xxx.supabase.co:5432/postgres
+   - Remplacer [MOT-DE-PASSE] par votre vrai mot de passe
+
+☐ 4. RENDER - SUPPRIMER LES ANCIENNES VARIABLES
+   - Supprimer MYSQL_HOST (si existe)
+   - Supprimer MYSQL_PORT (si existe)
+   - Supprimer MYSQL_USER (si existe)
+   - Supprimer MYSQL_PASSWORD (si existe)
+   - Supprimer MYSQL_DATABASE (si existe)
+
+☐ 5. RENDER - REDÉPLOYER
+   - Manual Deploy > Deploy latest commit
+   - Attendre la fin du déploiement
+
+☐ 6. RENDER - VÉRIFIER LES LOGS
+   - Chercher "Application startup complete"
+   - Pas d'erreur "Exception in ASGI application"
+
+☐ 7. TESTER L'APPLICATION
+   - Ouvrir le frontend Vercel
+   - Essayer de se connecter
+   - Vérifier que les données s'affichent
+
+
+EXEMPLE DE DATABASE_URL CORRECT:
+───────────────────────────────────────────────────────────────────
+postgresql://postgres:VotreMotDePasse@db.abcdefghijklmnop.supabase.co:5432/postgres
+
+
+SI ÇA NE MARCHE PAS:
+───────────────────────────────────────────────────────────────────
+1. Vérifier que DATABASE_URL est bien défini sur Render
+2. Vérifier que le mot de passe est correct (sans [])
+3. Vérifier les logs Render pour voir l'erreur exacte
+4. Vérifier que psycopg2-binary est dans requirements.txt
+
