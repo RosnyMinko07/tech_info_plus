@@ -19,20 +19,24 @@ function UtilisateurFormModal({ utilisateur, onClose, onSuccess }) {
 
     // Définir les droits par défaut selon le rôle (comme Python ligne 818-872)
     const getDroitsByRole = (role) => {
+        const droitsComptable = {
+            "gestion_utilisateurs": true,
+            "gestion_factures": true,
+            "gestion_clients": true,
+            "gestion_produits": true,
+            "gestion_stock": true,
+            "gestion_rapports": true,
+            "gestion_avoirs": true,
+            "gestion_reglements": true,
+            "gestion_comptoir": true,
+            "gestion_devis": true
+        };
+
         const droitsParRole = {
             "ADMIN": "TOUS",
-            "GESTIONNAIRE": {
-                "gestion_utilisateurs": true,
-                "gestion_factures": true,
-                "gestion_clients": true,
-                "gestion_produits": true,
-                "gestion_stock": true,
-                "gestion_rapports": true,
-                "gestion_avoirs": true,
-                "gestion_reglements": true,
-                "gestion_comptoir": true,
-                "gestion_devis": true
-            },
+            "COMPTABLE": droitsComptable,
+            // Compatibilité avec les anciens comptes
+            "GESTIONNAIRE": droitsComptable,
             "VENDEUR": {
                 "gestion_utilisateurs": false,
                 "gestion_factures": true,
@@ -180,9 +184,9 @@ function UtilisateurFormModal({ utilisateur, onClose, onSuccess }) {
                             className="form-control"
                             required
                         >
-                            <option value="ADMIN">🛡️ Administrateur</option>
-                            <option value="GESTIONNAIRE">👔 Gestionnaire</option>
-                            <option value="VENDEUR">👤 Vendeur</option>
+            <option value="ADMIN">🛡️ Administrateur</option>
+            <option value="COMPTABLE">🧮 Comptable</option>
+            <option value="VENDEUR">👤 Vendeur</option>
                         </select>
                     </div>
 

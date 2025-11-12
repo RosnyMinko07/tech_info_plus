@@ -356,9 +356,8 @@ const Utilisateurs = () => {
           >
             <Select>
               <Option value="ADMIN">Administrateur</Option>
-              <Option value="GESTIONNAIRE">Gestionnaire</Option>
-              <Option value="VENDEUR">Vendeur</Option>
               <Option value="COMPTABLE">Comptable</Option>
+              <Option value="VENDEUR">Vendeur</Option>
             </Select>
           </Form.Item>
 

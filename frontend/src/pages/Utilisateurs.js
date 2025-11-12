@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaSearch, FaSync, FaEdit, FaTrash, FaUserShield, FaUserTie, FaUser, FaKey } from 'react-icons/fa';
+import { FaPlus, FaSearch, FaSync, FaEdit, FaTrash, FaUserShield, FaUser, FaKey, FaCalculator } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { utilisateurService, formatDate } from '../services/api';
 import UtilisateurFormModal from '../components/UtilisateurFormModal';
@@ -106,7 +106,7 @@ function Utilisateurs() {
     const getRoleIcon = (role) => {
         switch (role) {
             case 'ADMIN': return <FaUserShield style={{ color: '#EF4444' }} />;
-            case 'GESTIONNAIRE': return <FaUserTie style={{ color: '#3B82F6' }} />;
+            case 'COMPTABLE': return <FaCalculator style={{ color: '#3B82F6' }} />;
             case 'VENDEUR': return <FaUser style={{ color: '#10B981' }} />;
             default: return <FaUser style={{ color: '#6B7280' }} />;
         }
@@ -115,7 +115,7 @@ function Utilisateurs() {
     const getRoleColor = (role) => {
         switch (role) {
             case 'ADMIN': return '#EF4444';
-            case 'GESTIONNAIRE': return '#3B82F6';
+            case 'COMPTABLE': return '#3B82F6';
             case 'VENDEUR': return '#10B981';
             default: return '#6B7280';
         }
