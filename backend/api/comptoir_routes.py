@@ -155,36 +155,44 @@ async def get_ventes_aujourdhui(db: Session = Depends(get_db)):
     """
     aujourd_hui = date.today()
     
-    # 🔥 Lit depuis FACTURE comme le code Python
-    ventes = db.query(Facture).filter(
+    # 🔥 Lecture depuis FACTURE en incluant le vendeur (utilisateur)
+    ventes = db.query(
+        Facture,
+        Utilisateur.nom_utilisateur
+    ).outerjoin(
+        Utilisateur, Facture.id_utilisateur == Utilisateur.id_utilisateur
+    ).filter(
         Facture.date_facture == aujourd_hui,
         Facture.type_facture.in_(['COMPTOIR', 'RETOUR'])
     ).all()
     
-    # Calculer total en tenant compte des retours (négatifs) - COMME PYTHON ligne 910-916
-    # 🔥 CORRECTION: Utiliser total_ttc (montant réel vendu) au lieu de montant_avance (montant reçu)
-    total_jour = sum(
-        float(v.total_ttc or 0) if v.type_facture == 'COMPTOIR' else -float(v.total_ttc or 0)
-        for v in ventes
-    )
+    # Calculer total en tenant compte des retours (négatifs)
+    total_jour = 0.0
+    for facture, _ in ventes:
+        montant = float((facture.total_ttc or facture.montant_ttc or 0))
+        total_jour += montant if facture.type_facture == 'COMPTOIR' else -montant
+    
     nb_ventes = len(ventes)
     
     # Préparer les détails des ventes avec leurs lignes
     ventes_detaillees = []
-    for v in ventes:
+    for facture, vendeur_nom in ventes:
         lignes = db.query(LigneFacture).filter(
-            LigneFacture.id_facture == v.id_facture
+            LigneFacture.id_facture == facture.id_facture
         ).all()
         
         ventes_detaillees.append({
-            "id_facture": v.id_facture,
-            "numero_facture": v.numero_facture,
-            "montant_total": float(v.montant_ttc or 0),
-            "montant_avance": float(v.montant_avance or 0),  # Montant reçu
-            "type_facture": v.type_facture,
-            "date_vente": v.created_at.isoformat() if v.created_at else None,
-            "heure": v.created_at.strftime("%H:%M") if v.created_at else "",
-            "notes": v.notes or "",
+            "id_facture": facture.id_facture,
+            "numero_facture": facture.numero_facture,
+            "montant_total": float(facture.montant_ttc or facture.total_ttc or 0),
+            "montant_avance": float(facture.montant_avance or 0),  # Montant reçu
+            "type_facture": facture.type_facture,
+            "date_vente": facture.created_at.isoformat() if facture.created_at else None,
+            "heure": facture.created_at.strftime("%H:%M") if facture.created_at else "",
+            "notes": facture.notes or "",
+            "id_utilisateur": facture.id_utilisateur,
+            "vendeur": vendeur_nom or "Système",
+            "client_nom": "Retour Comptoir" if facture.type_facture == "RETOUR" else "Comptoir",
             "lignes": [
                 {
                     "id_ligne_facture": ligne.id_ligne_facture,
@@ -487,7 +495,9 @@ async def get_vente_by_id(
     Récupère une vente comptoir spécifique depuis FACTURE (comme Python)
     """
     try:
-        facture = db.query(Facture).filter(
+        facture = db.query(Facture, Utilisateur.nom_utilisateur).outerjoin(
+            Utilisateur, Facture.id_utilisateur == Utilisateur.id_utilisateur
+        ).filter(
             Facture.id_facture == id_facture,
             Facture.type_facture.in_(['COMPTOIR', 'RETOUR'])
         ).first()
@@ -495,21 +505,25 @@ async def get_vente_by_id(
         if not facture:
             raise HTTPException(status_code=404, detail="Vente non trouvée")
         
+        facture_obj, vendeur_nom = facture
+        
         # Récupérer les lignes de cette facture
         lignes = db.query(LigneFacture, Article.designation).join(
             Article, LigneFacture.id_article == Article.id_article
         ).filter(
-            LigneFacture.id_facture == facture.id_facture
+            LigneFacture.id_facture == facture_obj.id_facture
         ).all()
         
         return {
-            "id_facture": facture.id_facture,
-            "numero_facture": facture.numero_facture,
-            "date_vente": facture.created_at.isoformat() if facture.created_at else None,
-            "montant_total": float(facture.montant_ttc or 0),
-            "montant_avance": float(facture.montant_avance or 0),  # Montant reçu
-            "type_facture": facture.type_facture,
-            "notes": facture.notes,
+            "id_facture": facture_obj.id_facture,
+            "numero_facture": facture_obj.numero_facture,
+            "date_vente": facture_obj.created_at.isoformat() if facture_obj.created_at else None,
+            "montant_total": float(facture_obj.montant_ttc or 0),
+            "montant_avance": float(facture_obj.montant_avance or 0),  # Montant reçu
+            "type_facture": facture_obj.type_facture,
+            "notes": facture_obj.notes,
+            "id_utilisateur": facture_obj.id_utilisateur,
+            "vendeur": vendeur_nom or "Système",
             "lignes": [
                 {
                     "id_ligne": ligne[0].id_ligne_facture,

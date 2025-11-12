@@ -1,0 +1,1 @@
+-- Migration Supabase : agrandir la colonne image_path pour stocker les images Base64\nALTER TABLE article\nALTER COLUMN image_path TYPE TEXT;\n\n-- Vérification\nSELECT column_name, data_type\nFROM information_schema.columns\nWHERE table_name = 'article'\n  AND column_name = 'image_path';
