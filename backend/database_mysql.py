@@ -120,7 +120,7 @@ class Article(Base):
     stock_alerte = Column(Integer, default=10)
     unite = Column(String(20), default='PIECE')
     categorie = Column(String(50))
-    image_path = Column(String(255))
+    image_path = Column(Text)  # LONGTEXT pour stocker les images Base64
     actif = Column(Boolean, default=True)  # Pour activer/désactiver l'article
     id_fournisseur = Column(Integer, ForeignKey('fournisseur.id_fournisseur'))
     created_at = Column(DateTime, default=datetime.now)

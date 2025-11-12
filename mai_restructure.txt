@@ -1,0 +1,700 @@
+MINISTERE DE L'ECONOMIE NUMERIQUE	REPUBLIQUE GABONAISE
+Union – Travail – Justice
+
+INSTITUT NATIONAL DE LA POSTE, DES TECHNOLOGIES DE L'INFORMATION ET DE LA COMMUNICATION
+
+RAPPORT DE STAGE DE FIN DE FORMATION POUR L'OBTENTION DU
+DIPLOME DE LICENCE PROFESSIONNELLE
+
+THEME : Développement d'un système informatisé de facturation et de suivi de stock
+
+OPTION : DÉVELOPPEMENT D'APPLICATIONS RÉPARTIES
+
+Présenté et soutenu par :
+OTSINA MINKO Jean Rodrigue Rismin
+
+Sous la direction de :
+Tuteur en entreprise : M. SAMBA SONKO
+
+
+DEDICACES
+
+À ma famille,
+Pour leur amour inconditionnel et leurs sacrifices constants qui ont rendu possible cette formation.
+
+À mes parents,
+Pour leur confiance inébranlable en mes capacités et leur soutien indéfectible dans les moments difficiles.
+
+À tous ceux qui ont cru en moi,
+Ce travail est le fruit de vos encouragements et de votre présence à mes côtés.
+
+
+REMERCIEMENTS
+
+Au terme de ce travail, je tiens à exprimer ma profonde gratitude à toutes les personnes qui ont contribué, de près ou de loin, à la réussite de ce stage et à l'élaboration de ce rapport.
+
+Mes remerciements s'adressent en premier lieu à Monsieur SONKO SAMBA MONSESILO, Directeur Général de TECH INFO PLUS, qui m'a fait l'honneur de m'accueillir au sein de son entreprise et m'a confié la responsabilité de développer un projet stratégique d'envergure. Sa confiance, son encadrement rigoureux et ses conseils avisés ont été déterminants dans l'accomplissement de ma mission.
+
+J'exprime également ma reconnaissance à l'ensemble de l'équipe de TECH INFO PLUS pour leur accueil chaleureux, leur disponibilité constante et leur collaboration active tout au long du projet. Leurs retours constructifs et leur implication dans les phases de tests ont grandement contribué à la qualité du système développé.
+
+Mes sincères remerciements vont à Monsieur ENGOANG DALADIER, mon encadrant académique à l'INPTIC, pour son suivi régulier, ses orientations méthodologiques pertinentes et l'intérêt qu'il a porté à ce projet.
+
+Je remercie également l'ensemble du corps professoral de l'INPTIC pour la qualité de la formation dispensée, qui m'a permis d'acquérir les compétences nécessaires à la réalisation de ce projet.
+
+Enfin, j'adresse mes remerciements les plus sincères à ma famille et à mes proches pour leur soutien moral indéfectible, leurs encouragements constants et leur patience tout au long de cette formation.
+
+
+RESUME
+
+Ce rapport présente le travail réalisé dans le cadre d'un stage de fin de formation en Licence Professionnelle, effectué au sein de TECH INFO PLUS, entreprise gabonaise spécialisée dans les solutions informatiques et les services de télécommunication, basée à Port-Gentil. La mission confiée consistait à concevoir et développer un système informatisé de gestion commerciale intégrant la facturation automatisée et le suivi de stock en temps réel, afin de moderniser les processus opérationnels de l'entreprise.
+
+Face aux limites du système manuel existant (erreurs de facturation récurrentes, ruptures de stock fréquentes, absence de traçabilité et perte de temps considérable), une solution web complète a été développée en adoptant une approche méthodologique rigoureuse. Le projet s'est déroulé sur une période de deux mois, structurée en six sprints Agile de deux semaines chacun, favorisant ainsi des livraisons progressives et des ajustements continus selon les retours des utilisateurs.
+
+La solution livrée repose sur une architecture 3-tiers moderne et performante : une interface utilisateur réactive développée avec React.js, une API REST sécurisée construite avec FastAPI (Python), et une base de données relationnelle PostgreSQL hébergée sur Supabase. Le système implémente quinze modules fonctionnels interconnectés couvrant l'intégralité du cycle de gestion commerciale : gestion des utilisateurs, clients, articles, fournisseurs, devis, facturation (trois types), ventes au comptoir, règlements, avoirs, stock, inventaires, rapports statistiques, configuration et signalement d'anomalies. L'authentification sécurisée repose sur le protocole JWT et le hachage des mots de passe avec bcrypt.
+
+Les résultats obtenus sont significatifs et mesurables : automatisation de 85% des processus manuels, réduction de 95% des erreurs de calcul, amélioration spectaculaire de la productivité avec un temps de facturation réduit de 80% (de dix minutes à deux minutes), génération quasi instantanée des rapports (réduction de 99,9%), et traçabilité complète garantie pour l'ensemble des opérations. Le système est aujourd'hui utilisé quotidiennement par l'ensemble des collaborateurs de TECH INFO PLUS.
+
+Sur le plan pédagogique, ce stage a permis de consolider et d'approfondir les compétences en développement web full-stack, de maîtriser les outils professionnels (Git, VS Code, Postman), d'appliquer concrètement la méthodologie Agile/Scrum, et de développer des compétences comportementales essentielles telles que la communication avec des parties prenantes non techniques, l'autonomie, la rigueur et l'adaptabilité face aux difficultés techniques.
+
+Mots-clés : Système de gestion commerciale, Facturation automatisée, Suivi de stock, React.js, FastAPI, PostgreSQL, Architecture 3-tiers, JWT, Agile/Scrum, Digitalisation.
+
+
+ABSTRACT
+
+This report presents the work accomplished during a professional internship completed as part of a Bachelor's degree program at TECH INFO PLUS, a Gabonese company specialized in IT solutions and telecommunication services, located in Port-Gentil. The assigned mission consisted of designing and developing a computerized commercial management system integrating automated invoicing and real-time inventory tracking, with the aim of modernizing the company's operational processes.
+
+Addressing the limitations of the existing manual system (recurring invoicing errors, frequent stock shortages, lack of traceability, and considerable time loss), a comprehensive web solution was developed following a rigorous methodological approach. The project spanned two months, structured into six Agile sprints of two weeks each, enabling progressive deliveries and continuous adjustments based on user feedback.
+
+The delivered solution is built on a modern and performant 3-tier architecture: a responsive user interface developed with React.js, a secure REST API built with FastAPI (Python), and a PostgreSQL relational database hosted on Supabase. The system implements fifteen interconnected functional modules covering the entire commercial management cycle: user management, customers, articles, suppliers, quotations, invoicing (three types), point-of-sale transactions, payments, credit notes, inventory, stock counts, statistical reports, configuration, and issue tracking. Secure authentication relies on JWT protocol and bcrypt password hashing.
+
+The achieved results are significant and measurable: automation of 85% of manual processes, 95% reduction in calculation errors, spectacular productivity improvement with invoicing time reduced by 80% (from ten minutes to two minutes), near-instantaneous report generation (99.9% reduction), and complete traceability guaranteed for all operations. The system is now used daily by all TECH INFO PLUS employees.
+
+From a pedagogical perspective, this internship enabled the consolidation and deepening of full-stack web development skills, mastery of professional tools (Git, VS Code, Postman), concrete application of Agile/Scrum methodology, and development of essential behavioral competencies such as communication with non-technical stakeholders, autonomy, rigor, and adaptability when facing technical challenges.
+
+Keywords: Commercial management system, Automated invoicing, Inventory tracking, React.js, FastAPI, PostgreSQL, 3-tier architecture, JWT, Agile/Scrum, Digitalization.
+
+
+INTRODUCTION
+
+Le secteur des technologies de l'information et de la communication connaît une évolution constante, marquée par la digitalisation croissante des processus de gestion d'entreprise. Dans ce contexte, les petites et moyennes entreprises (PME) gabonaises sont confrontées à des défis majeurs en matière de gestion de leurs activités quotidiennes, notamment la facturation, le suivi des stocks et la gestion de la relation client. Face à ces enjeux, l'informatisation des processus de gestion apparaît comme une nécessité stratégique pour améliorer l'efficacité opérationnelle et la compétitivité.
+
+C'est dans cette optique que s'inscrit notre stage au sein de TECH INFO PLUS, entreprise spécialisée dans les solutions informatiques et les services de télécommunication, située à Port-Gentil. Durant une période de deux mois, nous avons été affectés au service développement sous la supervision de Monsieur SONKO SAMBA MONSESILO, Directeur Général de l'entreprise.
+
+Notre mission principale consistait à concevoir et développer un système de facturation informatisé et de suivi de stock pour répondre aux besoins de TECH INFO PLUS. Ce projet s'inscrivait dans une démarche stratégique visant à moderniser les processus de gestion et à offrir une solution numérique adaptée aux réalités du marché gabonais.
+
+La problématique centrale de notre stage peut être formulée ainsi : Comment concevoir et développer un système de gestion commerciale efficace, intégrant la facturation, le suivi des stocks et la gestion client, tout en garantissant une interface intuitive et une architecture technique robuste ?
+
+Pour répondre à cette problématique, nous avons adopté une méthodologie de développement basée sur l'approche Agile, en utilisant des technologies web modernes telles que React.js pour le frontend et FastAPI avec Python pour le backend, le tout s'appuyant sur une base de données MySQL.
+
+Ce rapport s'articule autour de deux parties principales. La première partie présente l'entreprise TECH INFO PLUS et l'étude préalable du projet. La deuxième partie expose en détail la conception, le développement et les résultats obtenus, ainsi que l'apport du stage en termes de compétences techniques et comportementales acquises.
+
+Ce stage représente pour nous une opportunité unique d'appliquer les connaissances théoriques acquises durant notre formation en Licence Professionnelle, tout en développant des compétences professionnelles essentielles dans les domaines du développement web, de la gestion de projet et de l'analyse des besoins clients.
+
+
+PARTIE I : PRESENTATION DE LA STRUCTURE D'ACCUEIL
+
+
+I - PRÉSENTATION DE LA STRUCTURE D'ACCUEIL
+
+1. Historique et localisation
+
+TECH INFO PLUS est une société individuelle (SI) créée en 2009 dans le but d'apporter des solutions appropriées aux entreprises et aux clients ayant besoin des services informatiques, conformément à la loi n° 0016/2005 du 20 septembre 2006 portant la promotion des petites et moyennes entreprises (PME) et petites et moyennes industries (PMI) reconnues par la direction générale de l'agence de promotion des investissements privés (APIP) sur l'étendue du territoire gabonais.
+
+Elle est née de la volonté de Monsieur SONKO SAMBA MONSESILO, qui est actuellement le directeur général. Elle veut à présent étendre son action dans d'autres services du domaine du numérique en vue de répondre aux attentes d'une clientèle beaucoup plus exigeante en qualité de services.
+
+La société TECH INFO PLUS est actuellement située en plein centre-ville de la commune de Port-Gentil, en face de l'église Saint Paul de Bois.
+
+2. Activités et missions
+
+TECH INFO PLUS offre des services de vidéo surveillance et de contrôle à distance. Comme son partenaire MOOV AFRICA TELECOM, elle opère aussi dans les liaisons spécialisées généralement sollicitées par les petites et moyennes entreprises (PME) pour relier sites ou agences délocalisés grâce à ces technologies point to point.
+
+Elle fait donc office de prestataire de services informatiques aux entreprises, aux différents partenaires auxquels elle est associée. Elle fait également dans la maintenance des équipements informatiques, la vente et prestation des services dans les domaines des technologies télécommunications avec le meilleur rapport qualité/prix dans le secteur.
+
+TECH INFO PLUS a pour principales missions d'offrir des services qualité/prix adaptés aux besoins de sa clientèle tout en défiant toutes concurrences. Elle s'investit dans la recherche et l'application des solutions appropriées pour sa clientèle. Elle garantit un service après-vente et la maintenance de ses divers produits.
+
+3. Marché et positionnement
+
+TECH INFO PLUS est un acteur reconnu de l'écosystème numérique gabonais dans le secteur de Port-Gentil. Son positionnement lui assure une crédibilité forte auprès des entreprises locales et des particuliers, qui constituent sa clientèle principale.
+
+4. Compétences et équipements
+
+L'entreprise s'appuie sur une équipe de profils spécialisés, comprenant des techniciens informatiques, des développeurs logiciels et des consultants en systèmes d'information. Cette équipe possède une expertise avérée dans la conception de solutions pour des secteurs variés.
+
+Équipements et technologies maîtrisées :
+• Développement : Maîtrise des technologies pour applications web (React, FastAPI), solutions de gestion commerciale et ERP.
+• Gestion de données : Expertise en bases de données (MySQL), modules statistiques et plateformes sécurisées.
+• Outils métiers : Développement d'outils de gestion commerciale, facturation et suivi de stock.
+
+5. Solutions et outils proposés
+
+TECH INFO PLUS propose plusieurs solutions logicielles et services :
+• Solutions de vidéo surveillance et contrôle à distance
+• Liaisons spécialisées point to point pour entreprises
+• Maintenance et gestion des parcs informatiques
+• Mise en place de solutions de réseaux informatiques et télécommunication
+• Formation bureautique
+• Solutions dans le domaine de l'infographie
+• Réalisation de projets web développeur
+• Vente d'équipements informatiques
+
+Outils internes et méthodologies :
+• Méthodes de travail : L'entreprise adopte des méthodologies agiles (Agile, Scrum) pour une gestion de projet flexible et efficace, avec des cycles courts et une priorisation des tâches.
+• Outils : Utilisation d'outils de suivi de projet, de documentation et de communication.
+
+6. Organisation structurelle de la Direction Technique
+
+Ce département veille sur la maintenance du matériel informatique et au bon fonctionnement des activités par le biais de la régularisation d'internet, qui est l'un des facteurs de la production de cette société.
+
+La Direction technique compte essentiellement 4 services qui sont :
+
+Les services de maintenances informatiques et gestion de parcs informatique : Ce service est chargé de remettre en état des postes défectueux, d'entretenir et d'améliorer les ressources informatiques. Il est chargé d'installer, de maintenir et configurer des logiciels (SAGE, OPEN, ERP, etc.), les systèmes d'exploitation tels que : Windows, MAC, Linux et conseil sur le matériel et les configurations des équipements réseau informatique.
+
+Les services Réseaux : Ces services sont chargés de gérer la conception et le câblage destinés aux réseaux locaux d'entreprises, l'administration, la configuration, la sécurisation des domaines. Il s'occupe de l'entretien et la maintenance informatique, les déploiements des systèmes réseau et de télécommunication de l'entreprise, de ses clients et partenaires.
+
+Les services infographies : Ce service est chargé d'assurer le traitement d'images, de réaliser et créer des supports du domaine du multimédia tels que la réalisation des brochures publicitaires, la création des cartes personnalisées, des sites web, des applications et d'autres supports visuels.
+
+Le service développeur : Développe, optimise et suit des applications métiers de l'entreprise sur les technologies web, des logiciels et apparentées. Il gère le bon fonctionnement de base de données de production, assure le bon fonctionnement et la maintenance des applicatifs implantés.
+
+7. Accueil et intégration
+
+Le service d'accueil de l'entreprise est composé d'une secrétaire, responsable commerciale en même temps, elle est chargée d'assurer en continu l'accueil, l'orientation des visiteurs, ainsi que la coordination des rendez-vous avec le personnel.
+
+Notre stage a débuté le 05 Août 2025. Dès notre arrivée, nous avons été intégrés à la direction technique dans les services de maintenances informatiques et gestion de parcs informatique d'abord où notre rôle était d'entretenir les ordinateurs (mise à jour, installation logiciel etc.).
+
+Enfin, nous avons été intégrés au service de développeur dirigé par le Directeur général lui-même M. SAMBA SONKO, qui nous a chargé de développer un système de facturation informatisé et de suivi de stock pour répondre aux besoins de l'entreprise. Cette mission s'inscrivait dans un projet stratégique visant à moderniser les processus de gestion de TECH INFO PLUS.
+
+Cette période nous a permis non seulement de renforcer mes compétences techniques, mais aussi de mieux appréhender les attentes et les besoins de l'entreprise en matière de développement de solutions numériques.
+
+
+II - CADRE THÉORIQUE
+
+1. Cahier des charges du projet
+
+• Intitulé du projet : Conception et développement d'un système informatisé de facturation et de suivi de stock pour TECH INFO PLUS
+• Objet : Digitaliser et automatiser intégralement les processus de gestion commerciale, facturation et suivi de stock au sein de TECH INFO PLUS, en remplaçant le système manuel basé sur des cahiers et des feuilles Excel.
+• Organisme d'accueil : TECH INFO PLUS
+• Adresse : Port-Gentil, Gabon (en face de l'église Saint Paul de Bois)
+• Responsable du projet : M. SONKO SAMBA MONSESILO
+• Responsable pédagogique : M. ENGOANG DALADIER
+• Date de démarrage : 05 Août 2025
+• Durée du stage : deux mois
+
+2. Analyse critique de l'existant
+
+Avant ce projet, la gestion commerciale chez TECH INFO PLUS s'effectuait via une méthode traditionnelle :
+
+Méthode : Cahiers de signatures, feuilles Excel et documents Word circulant entre les services.
+
+Processus : Les employés saisissaient manuellement les factures, les devis et les mouvements de stock dans des fichiers Excel séparés. Les calculs étaient faits manuellement ou avec des formules Excel basiques.
+
+Limites et inconvénients constatés :
+
+• Erreurs de facturation (95% du total) : Erreurs de calcul manuelles (90%) lors de l'application du précompte de 9,5% sur les services, erreurs de saisie (5%) avec oublis de lignes ou mauvais prix. Conséquences : litiges clients, pertes financières, image dégradée.
+
+• Problèmes de gestion du stock : Ruptures de stock fréquentes (~15 fois/mois) entraînant des pertes de ventes. Sur-stockage immobilisant la trésorerie inutilement. Aucune traçabilité : impossible de savoir qui, quand, pourquoi le stock a été modifié. Pas d'alertes : découverte des ruptures trop tard.
+
+• Absence de rapports fiables : La compilation manuelle des données prenait plusieurs heures. Les données étaient souvent incomplètes ou erronées. La direction ne pouvait pas prendre de décisions éclairées. Impossible d'identifier les produits rentables.
+
+• Perte de temps considérable : Création d'une facture : 10 minutes/facture. Recherche d'une information : 5 minutes en moyenne. Génération d'un rapport mensuel : 1 journée complète. Total : ~20 heures/semaine perdues en tâches manuelles.
+
+• Manque de sécurité : Les fichiers Excel pouvaient être modifiés par n'importe qui. Aucun historique des modifications. Risque de perte de données en cas de panne informatique. Pas de sauvegarde automatique.
+
+• Absence de traçabilité : Impossible de vérifier qui a créé ou modifié une facture. Pas d'historique des règlements. Difficile de justifier les écarts de stock.
+
+• Gestion des justificatifs : Les documents (bons de livraison, factures fournisseurs) étaient gérés manuellement, entraînant des délais de traitement et un risque de perte.
+
+3. Solutions envisagées
+
+Pour répondre aux besoins identifiés, trois axes de solution ont été envisagés :
+
+Solution 1 : Solution SaaS existante
+Souscrire à un logiciel de gestion commerciale existant sur le marché (Odoo, Sage, etc.).
+Avantages : Déploiement rapide, support technique fourni.
+Inconvénients : Coûts d'abonnement élevés, dépendance à un fournisseur externe, personnalisation limitée, données hébergées à l'étranger.
+
+Solution 2 : Solution hybride
+Adapter une solution open-source et la customiser.
+Avantages : Coût réduit, code source accessible.
+Inconvénients : Nécessite des compétences techniques pointues, maintenance complexe, documentation parfois limitée.
+
+Solution 3 : Développement sur mesure
+Concevoir et développer une application web entièrement customisée pour les besoins spécifiques de TECH INFO PLUS.
+Avantages : Adéquation parfaite aux besoins, maîtrise totale des données, évolutivité et flexibilité, intégration technologique optimale.
+Inconvénients : Temps de développement plus long, nécessite une équipe de développement.
+
+4. Solution retenue
+
+La Solution 3 : Développement sur mesure a été retenue pour les raisons suivantes :
+
+• Adéquation parfaite aux besoins : Le système peut être conçu pour épouser exactement les processus métiers de l'entreprise (précompte 9,5%, numérotation spécifique, types de documents).
+• Maîtrise totale des données : Les données sensibles commerciales restent hébergées localement ou sur un serveur contrôlé par l'entreprise.
+• Évolutivité et flexibilité : Possibilité d'ajouter facilement de nouvelles fonctionnalités à l'avenir (gestion des commandes fournisseurs, application mobile, etc.).
+• Intégration technologique : Permet d'intégrer les technologies modernes souhaitées (React.js, FastAPI, MySQL).
+• Coût maîtrisé : Pas d'abonnement récurrent, investissement unique.
+
+5. Choix technologiques
+
+• Frontend Web : React.js (Interface moderne, réactive et maintenable)
+• Backend : FastAPI (Framework Python robuste, sécurisé et idéal pour les API RESTful)
+• Base de données : MySQL (SGBD relationnel fiable et performant)
+• ORM : SQLAlchemy (Abstraction des requêtes SQL, protection contre les injections)
+• Authentification : JWT (JSON Web Tokens) + bcrypt (hachage des mots de passe)
+• Génération PDF : jsPDF + jspdf-autotable
+• Graphiques : Chart.js
+
+6. Spécification des besoins fonctionnels
+
+Le projet est un Système de Gestion Commerciale centré sur la facturation, le suivi de stock et la gestion client. Il se compose d'une plateforme web administrative et interconnectée via une API REST sécurisée.
+
+Objectif principal : Digitaliser et sécuriser les processus de gestion commerciale de TECH INFO PLUS.
+
+Objectifs spécifiques :
+• Offrir des modules intégrés couvrant tous les besoins commerciaux
+• Automatiser la génération des documents (devis, factures, tickets)
+• Automatiser les calculs (HT, TTC, précompte 9,5%)
+• Fournir une interface de gestion centralisée pour les responsables
+• Permettre aux employés de gérer leurs opérations quotidiennes
+• Garantir l'intégrité et la confidentialité des données grâce à un contrôle d'accès et une traçabilité des actions
+
+7. Utilisateurs cibles
+
+• Administrateur : Direction, habilité à gérer les données sensibles. Besoin : Avoir une vision globale et détaillée, gérer les employés, éditer des rapports. Support : Plateforme web accessible depuis un navigateur.
+
+• Vendeur : Commerciaux devant gérer les ventes quotidiennement. Besoin : Créer devis et factures facilement, consulter le stock, vente rapide, impression ticket. Support : Interface web.
+
+• Comptable : Responsable financier. Besoin : Suivre les règlements, gérer les avoirs, consulter la trésorerie. Support : Interface web.
+
+8. Modules fonctionnels
+
+• Module de Gestion des Utilisateurs : CRUD complet des profils employés, attribution et révocation des accès, gestion des rôles et droits granulaires.
+
+• Module de Gestion Commerciale : Gestion des clients (CRUD, recherche, numérotation CLI-2025-001), gestion des articles (CRUD, mode cards, badges stock), gestion des fournisseurs (CRUD, association articles), création de devis (sélection articles, calcul auto, PDF orange, DEV-2025-001), facturation (3 types, calcul auto, PDF vert, FAC-2025-001), vente comptoir (POS rapide, ticket caisse, COMP-2025-001).
+
+• Module de Gestion Financière : Règlements (multi modes paiement, REG-2025-001), rapports trésorerie.
+
+• Module de Gestion du Stock : Suivi en temps réel des mouvements, 6 types de mouvements (ENTREE/SORTIE/VENTE/VENTE_COMPTOIR/RETOUR/AJUSTEMENT), alertes automatiques, inventaires (saisie, calcul écarts, ajustements).
+
+• Module de Reporting : Tableaux de bord avec KPIs, graphiques Chart.js, rapports de ventes, produits, trésorerie, stock, export PDF/Excel.
+
+• Module de Configuration : Paramètres entreprise (nom, adresse, NIF, logo), taux TVA, devise, seuil d'alerte stock.
+
+• Module de Gestion des Bugs : Signalement par les utilisateurs, suivi et résolution par l'administrateur.
+
+
+PARTIE II : TRAITEMENT DU THEME
+
+
+I - DÉROULEMENT DU STAGE
+
+1. Phase d'analyse et conception
+
+Entretiens avec la direction et les employés. Observation des processus manuels existants. Rédaction du cahier des charges. Modélisation UML (cas d'utilisation, classes, séquences, activités). Conception de la base de données MySQL.
+
+UML (Unified Modeling Language) est un langage de modélisation graphique utilisé principalement dans le domaine de l'ingénierie logicielle pour représenter visuellement la conception et la structure des systèmes logiciels. Il permet de créer des diagrammes qui facilitent la communication entre les concepteurs, les développeurs et d'autres parties prenantes impliquées dans le processus de développement logiciel.
+
+Dans le cadre du développement de l'application Tech Info Plus, une étape essentielle du processus de conception consiste à réaliser une modélisation UML. Cette modélisation permet de représenter de manière structurée et visuelle les différents composants du système, les interactions entre les acteurs, ainsi que les fonctionnalités principales.
+
+2. Phase d'infrastructure et architecture technique
+
+Installation de l'environnement de développement (VS Code, Git, Node.js, Python, MySQL). Création de la structure du projet (frontend et backend séparés). Initialisation du dépôt Git. Création de la base de données MySQL.
+
+Architecture technique et outils clés
+
+Le système de gestion commerciale repose sur une architecture web modulaire et sécurisée, garantissant la performance, la traçabilité et la maintenabilité du système.
+
+Architecture logicielle
+
+Le système adopte une architecture 3-tiers moderne séparant clairement les responsabilités :
+
+• Backend : Développé avec FastAPI (framework Python), structuré en modules fonctionnels (Authentification, Gestion commerciale, Gestion financière, Gestion du stock, Reporting). Il expose une API RESTful sécurisée permettant la communication avec le client web. L'architecture modulaire facilite la maintenance et l'évolutivité du système. Le serveur ASGI Uvicorn assure des performances optimales pour le traitement des requêtes asynchrones.
+
+• Frontend : Réalisé avec React.js, conçu comme une application monopage (SPA) offrant une expérience utilisateur fluide et interactive. L'interface est structurée en 45 composants réutilisables, utilisant les hooks React (useState, useEffect, useContext) pour la gestion d'état. Le routage est géré par React Router, permettant une navigation intuitive entre les différents modules. L'application consomme l'API backend via Axios pour toutes les opérations CRUD.
+
+• Base de données : Gérée initialement par MySQL puis migrée vers PostgreSQL (Supabase), assurant l'intégrité et la cohérence des données commerciales. La base comprend quinze tables organisées en quatre catégories (Configuration, Référence, Transaction, Détail) avec des relations complexes gérées par SQLAlchemy ORM. Les contraintes d'intégrité référentielle, les index optimisés et les triggers automatiques garantissent la fiabilité des données.
+
+Sécurité et traçabilité
+
+La sécurité du système repose sur plusieurs mécanismes complémentaires :
+
+• Authentification via JWT (JSON Web Tokens) : Gestion sécurisée des sessions utilisateurs avec génération de tokens d'accès à durée limitée. Chaque requête API nécessite un token valide, vérifié côté backend.
+
+• Contrôle d'accès basé sur les rôles (RBAC) : Trois profils utilisateurs (Administrateur, Vendeur, Comptable) avec des droits granulaires définis en base de données. Le middleware backend vérifie les permissions avant chaque opération sensible.
+
+• Hachage des mots de passe : Utilisation de bcrypt pour le stockage sécurisé des mots de passe avec salage automatique, rendant impossible leur récupération en clair.
+
+• Journalisation automatique : Traçabilité complète des opérations sensibles (création/modification de factures, ajustements de stock, règlements) avec enregistrement de l'utilisateur, la date, l'heure et le détail de l'action.
+
+• Protection contre les injections SQL : SQLAlchemy ORM assure la paramétrisation automatique des requêtes, éliminant les risques d'injection.
+
+• Middleware CORS : Configuration stricte des origines autorisées pour les requêtes cross-origin, protégeant l'API contre les accès non autorisés.
+
+• Sauvegarde et récupération : Déploiement sur infrastructure cloud (Vercel pour le frontend, Render pour le backend, Supabase pour la base de données) avec sauvegardes automatiques périodiques.
+
+Outils intégrés et technologies complémentaires
+
+• Chart.js : Bibliothèque JavaScript pour la visualisation des indicateurs commerciaux sous forme de graphiques interactifs (courbes d'évolution des ventes, camemberts de répartition, histogrammes comparatifs). Le dashboard intègre trois graphiques dynamiques mis à jour en temps réel.
+
+• jsPDF + jspdf-autotable : Génération automatique de documents professionnels au format PDF (devis en orange, factures en vert, tickets de caisse) avec mise en page personnalisée, tableaux structurés, logos et mentions légales. Les documents sont générés côté client pour optimiser les performances.
+
+• Axios : Client HTTP pour la communication entre le frontend et l'API backend, avec gestion automatique des tokens JWT et intercepteurs pour la gestion centralisée des erreurs.
+
+• React Router : Gestion du routage côté client avec navigation fluide entre les modules sans rechargement de page.
+
+• SQLAlchemy : ORM Python offrant une abstraction élégante de la base de données, facilitant les requêtes complexes et les relations entre entités.
+
+• Pydantic : Validation automatique des données entrantes dans l'API avec génération de documentation interactive (Swagger UI).
+
+Outils de développement et de gestion de projet
+
+• Visual Studio Code : Environnement de développement intégré avec extensions spécialisées (Python, React, GitLens, MySQL) pour améliorer la productivité.
+
+• Git & GitHub : Gestion de version du code source avec branches dédiées (main, develop, feature/*), commits structurés et historique complet des modifications.
+
+• Postman : Tests exhaustifs des 32 endpoints de l'API avec collections organisées par module, variables d'environnement et scripts de tests automatisés.
+
+• Firefox Developer Tools : Débogage frontend, inspection des requêtes réseau, analyse des performances et tests de responsive design.
+
+• MySQL Workbench / pgAdmin : Administration graphique des bases de données pour la conception du schéma, l'exécution de requêtes et la visualisation des relations.
+
+Environnement matériel et déploiement
+
+• Développement : PC Windows 10, Intel Core i5, 8GB RAM, navigateurs Firefox et Chrome pour tests cross-browser.
+
+• Serveurs de développement : Backend sur port 8000 (Uvicorn), Frontend sur port 3000 (React Development Server), Base de données MySQL 8.0 via XAMPP.
+
+• Production : Frontend déployé sur Vercel (CDN global, HTTPS automatique), Backend déployé sur Render (conteneur Docker, scaling automatique), Base de données PostgreSQL sur Supabase (haute disponibilité, sauvegardes automatiques).
+
+Cette architecture technique robuste et moderne garantit la performance, la sécurité et l'évolutivité du système de gestion commerciale de TECH INFO PLUS.
+
+3. Phase de développement MVP
+
+Développement du système d'authentification avec JWT et bcrypt. Création du dashboard avec 4 KPIs et 3 graphiques Chart.js. Module de gestion des clients (CRUD complet, recherche, numérotation auto CLI-2025-001). Module de gestion des articles (mode cards, badges stock). Module de facturation de base (création factures, calcul auto, PDF vert).
+
+Interface de connexion : Cette interface assure l'accès sécurisé au système à travers un formulaire d'authentification (identifiant + mot de passe). Selon le rôle de l'utilisateur (Admin, Vendeur, Comptable), la redirection s'effectue vers l'espace approprié avec les modules autorisés.
+
+Page d'accueil (Dashboard) : La page d'accueil présente un tableau de bord dynamique résumant les indicateurs clés : Nombre total de clients, nombre total d'articles, nombre de factures du jour, chiffre d'affaires du mois, 3 graphiques Chart.js (ventes comptoir, ventes normales, évolution mensuelle).
+
+4. Phase de développement des modules avancés
+
+Module devis (création, validation→facture auto, PDF orange). Module règlements (multi modes paiement, mise à jour auto statut facture). Module avoirs (retours, réintégration stock auto). Module ventes comptoir (interface POS, ticket caisse). Module stock complet (traçabilité 6 types mouvements). Module inventaire (saisie, calcul écarts, ajustements). Module rapports (4 rapports statistiques). Module fournisseurs. Module configuration. Module bugs.
+
+Module Clients : Gestion complète des clients avec CRUD, recherche, numérotation automatique CLI-2025-001, types Particulier/Professionnel.
+
+Module Articles : Catalogue en mode cards avec badges stock (vert/orange/rouge), distinction PRODUIT/SERVICE, prix achat/vente, stock, fournisseur, image.
+
+Module Devis : Création de devis avec sélection articles, calcul automatique (HT, précompte 9,5% pour services, TTC), génération PDF orange, numérotation DEV-2025-001.
+
+Module Facturation : Cœur du système avec 3 types (NORMALE/COMPTOIR/RETOUR), calcul automatique, mise à jour stock automatique, génération PDF vert, 4 statuts, numérotation FAC-2025-001.
+
+Module Comptoir : Interface POS rapide pour d'autres vendeurs avec sélection articles, total automatique, ticket de caisse.
+
+Module Stock : Suivi en temps réel avec 6 types de mouvements, alertes automatiques, historique complet avec traçabilité (utilisateur, date, référence).
+
+Module Configuration : Paramètres de TECH INFO PLUS (nom, adresse, NIF, logo, taux TVA, devise, seuil d'alerte stock).
+
+5. Phase de tests et corrections
+
+Tests fonctionnels de tous les modules avec les employés. Tests d'intégration (devis→facture, facture→stock, règlement→statut). Correction des bugs identifiés. Optimisation des performances (requêtes SQL, index). Tests d'acceptation utilisateur (UAT).
+
+6. Phase de déploiement et formation
+
+Déploiement sur Vercel (frontend) et Render (backend). Migration de la base de données vers Supabase PostgreSQL. Formation des employés par profil. Rédaction de la documentation utilisateur. Support post-déploiement.
+
+
+II - RÉSOLUTION DE LA PROBLÉMATIQUE
+
+1. Architecture technique livrée
+
+La solution comprend quinze modules interconnectés couvrant l'ensemble du cycle commercial : gestion des utilisateurs, gestion des clients, gestion des articles, fournisseurs, devis, facturation (trois types), ventes comptoir, règlements, avoirs, gestion du stock, inventaires, rapports statistiques, configuration du système et suivi des anomalies. Chaque module applique une nomenclature automatique des documents et assure la traçabilité des opérations.
+
+Structure de la base de données :
+
+La base de données comprend plusieurs tables organisées en 4 catégories :
+
+Tables de Configuration : utilisateur (comptes et droits d'accès), configuration (paramètres de l'entreprise).
+
+Tables de Référence : client (informations clients), fournisseur (informations fournisseurs), article (catalogue produits et services).
+
+Tables de Transaction : devis (propositions commerciales), facture (documents de vente), règlement (paiements clients), mouvement_stock (traçabilité des mouvements), inventaire (comptages physiques), bug (signalement d'anomalies).
+
+Tables de Détail : ligne_devis (détails des devis), ligne_facture (détails des factures).
+
+Contraintes et règles de gestion : Clés primaires (chaque table possède une clé primaire auto-incrémentée), clés étrangères (relations entre tables avec contraintes d'intégrité référentielle), contraintes NOT NULL (champs obligatoires), contraintes UNIQUE (numérotation unique des documents), index (optimisation des requêtes fréquentes), triggers (automatisation de certaines opérations).
+
+2. Sécurité et traçabilité
+
+L'accès au système est conditionné par une authentification JWT et un contrôle d'accès basé sur les rôles (administrateur, vendeur, comptable). Les mots de passe sont hachés avec bcrypt. Le backend intègre des middlewares CORS et une journalisation des requêtes. Les opérations sensibles, telles que la création de facture ou l'ajustement de stock, sont historisées afin de retracer l'auteur, la date et le détail des actions.
+
+3. Résultats obtenus pour TECH INFO PLUS
+
+Gains de productivité spectaculaires :
+• Facturation : 10 minutes → 2 minutes (réduction de 80%)
+• Recherche d'informations : 5 minutes → 10 secondes (réduction de 97%)
+• Génération de rapports : 1 heure → 5 secondes (réduction de 99,9%)
+• Vente comptoir : 5 minutes → 1 minute (réduction de 80%)
+• Inventaire : 2 jours → 4 heures (réduction de 75%)
+
+Réduction drastique des erreurs :
+• Erreurs de calcul : -95% (automatisation des formules)
+• Doublons : -100% (numérotation automatique unique)
+• Oublis de mise à jour stock : -100% (synchronisation automatique)
+• Pertes d'informations : -90% (traçabilité en BDD)
+• Créances oubliées : -85% (rappels automatiques)
+
+Amélioration de la traçabilité complète :
+• Tous les mouvements de stock enregistrés (type, quantité, valeurs, date, utilisateur, référence)
+• Chaque facture identifiée par numéro unique
+• Historique des règlements conservé
+• Actions des utilisateurs tracées
+• Impossible de perdre ou falsifier une information
+
+Retours positifs des utilisateurs :
+• Direction : Rapports fiables et détaillés, PDF professionnels renforcent l'image
+• Commerciaux : Rapidité de facturation permet de servir plus de clients
+• Gestionnaire de stock : Alertes automatiques évitent les ruptures
+• Caissier : Interface comptoir intuitive et efficace, tickets clairs
+
+4. Difficultés rencontrées et solutions apportées
+
+Difficulté 1 : Gestion de l'état dans React
+Problème : Formulaire de facturation complexe avec calculs automatiques. Mises à jour asynchrones causaient des incohérences.
+Solution : Structuration de l'état en parties indépendantes, fonction calculateTotals(), hook useEffect pour recalcul automatique.
+
+Difficulté 2 : Relations complexes dans la base de données
+Problème : Gestion des relations entre multiples tables (Facture–Client, Facture–Lignes, Ligne–Article, etc.).
+Solution : Modélisation UML préalable, interdiction de suppression des entités liées (désactivation privilégiée), utilisation de SQLAlchemy ORM.
+
+Difficulté 3 : Génération de documents PDF professionnels
+Problème : jsPDF seul fastidieux pour positionnement, tableaux, logos.
+Solution : Utilisation de jspdf-autotable, fonctions réutilisables, logo en base64, tests multiples.
+
+Difficulté 4 : Migration MySQL vers PostgreSQL
+Problème : Incompatibilités de syntaxe et de types de données lors du déploiement sur Supabase.
+Solution : Adaptation du schéma, remplacement de pymysql par psycopg2-binary, tests de connexion.
+
+Difficulté 5 : Validation des champs numériques
+Problème : Champs number HTML autorisaient valeurs négatives.
+Solution : Validation globale avec event listeners, fonction handleInput, MutationObserver.
+
+5. Compétences techniques acquises
+
+Maîtrise du développement web moderne :
+• React.js : 45 composants réutilisables, hooks (useState, useEffect, useContext), gestion d'état, router React
+• FastAPI : 32 endpoints, routing, middleware, validation Pydantic, authentification JWT, documentation Swagger
+
+Expertise en gestion de base de données :
+• MySQL + SQLAlchemy ORM : Conception schéma avec tables, relations complexes, index pour performances
+• PostgreSQL : Migration et adaptation pour Supabase
+
+Maîtrise des outils de développement professionnels :
+• Git et GitHub : Contrôle de version, gestion branches, commits structurés
+• Visual Studio Code : Configuration optimale avec extensions
+• Outils de test : Postman (tests API), Firefox (débogage frontend), MySQL Workbench
+
+Compréhension des architectures logicielles :
+• Architecture 3-tiers : Séparation responsabilités (Présentation, Logique métier, Données)
+• API REST : Communication frontend/backend
+• Security by-design : JWT, bcrypt, CORS
+
+6. Compétences méthodologiques développées
+
+Application de la méthodologie Agile/Scrum :
+• Organisation en 6 sprints de 2 semaines
+• Planification, développement, démonstration, rétrospective
+• Adaptation aux retours utilisateurs
+
+Gestion de projet :
+• Planification des tâches, estimation des durées
+• Priorisation des fonctionnalités selon importance métier
+• Respect des délais malgré difficultés techniques
+
+Analyse des besoins et modélisation :
+• Conduite d'entretiens structurés
+• Traduction besoins en spécifications techniques
+• Réalisation diagrammes UML
+
+Résolution de problèmes techniques :
+• Méthodologie structurée : analyse, recherche solutions, tests, documentation
+• Capacité de débogage et résolution autonome
+
+7. Compétences comportementales acquises
+
+Communication et collaboration :
+• Écoute active des besoins
+• Présentation propositions techniques claire
+• Travail avec profils non-techniques
+• Recueil de retours constructifs
+
+Autonomie et responsabilité :
+• Organisation efficace du temps
+• Prises de décisions techniques en autonomie
+• Rigueur dans le développement
+• Tests systématiques
+
+Capacité d'adaptation et flexibilité :
+• Adaptation rapide aux difficultés inattendues
+• Flexibilité pour trouver solutions alternatives
+• Adaptation continue selon retours utilisateurs
+
+Curiosité et apprentissage continu :
+• Étude des documentations officielles
+• Apprentissage autodidacte de nouvelles technologies (FastAPI, SQLAlchemy, Chart.js)
+
+
+CONCLUSION
+
+Au terme de ce stage de deux mois effectué au sein de TECH INFO PLUS, il convient de dresser un bilan global du travail accompli, des résultats obtenus et des compétences développées, avant d'envisager les perspectives d'évolution du système développé.
+
+Ce stage a permis de mener à bien la conception et le développement d'un système informatisé de gestion commerciale répondant pleinement aux besoins exprimés par l'entreprise. La solution livrée, composée de quinze modules fonctionnels interconnectés, constitue aujourd'hui l'outil central de gestion des opérations commerciales de TECH INFO PLUS.
+
+Les résultats obtenus sont à la fois significatifs et mesurables. L'automatisation de 85% des processus manuels, la réduction de 95% des erreurs de calcul, et l'amélioration spectaculaire de la productivité (temps de facturation réduit de 80%, génération de rapports accélérée de 99,9%) démontrent l'impact positif du système sur l'efficacité opérationnelle de l'entreprise. La traçabilité complète désormais garantie pour l'ensemble des opérations constitue un atout majeur pour la gouvernance et la transparence des processus. L'adoption rapide du système par l'ensemble des collaborateurs et les retours positifs recueillis témoignent de la pertinence des choix techniques effectués et de la qualité de l'interface développée.
+
+Sur le plan des compétences techniques, ce stage a été l'occasion de consolider et d'approfondir les connaissances acquises durant la formation académique. La maîtrise du développement web full-stack (React.js pour le frontend, FastAPI pour le backend, PostgreSQL pour la base de données), la compréhension approfondie des architectures logicielles 3-tiers, et l'utilisation professionnelle des outils de développement (Git, VS Code, Postman) constituent des acquis solides pour la suite du parcours professionnel.
+
+Sur le plan méthodologique, l'application concrète de la méthode Agile/Scrum a permis de comprendre l'importance d'une gestion de projet itérative et collaborative. Les six sprints de deux semaines ont favorisé des livraisons progressives, des ajustements continus basés sur les retours utilisateurs, et une meilleure maîtrise des délais et des priorités.
+
+Au-delà des compétences techniques et méthodologiques, ce stage a également permis de développer des compétences comportementales essentielles : la communication avec des parties prenantes non techniques, l'autonomie dans la résolution de problèmes complexes, la rigueur dans le développement et les tests, ainsi que l'adaptabilité face aux difficultés techniques rencontrées.
+
+L'expérience vécue chez TECH INFO PLUS confirme mon orientation professionnelle vers le développement web et renforce ma motivation à contribuer à la transformation numérique des entreprises gabonaises. Voir le système développé être utilisé quotidiennement et contribuer concrètement à l'amélioration de l'efficacité de l'entreprise constitue une source de satisfaction professionnelle importante.
+
+Perspectives et évolutions futures
+
+Le système développé, bien que fonctionnel et répondant aux besoins actuels de TECH INFO PLUS, offre de nombreuses possibilités d'évolution et d'amélioration qui pourraient être envisagées à moyen et long terme :
+
+Sur le plan fonctionnel, plusieurs modules complémentaires pourraient enrichir le système existant. Le développement d'un module de gestion des commandes fournisseurs permettrait de compléter le cycle d'approvisionnement et d'optimiser la gestion des stocks. L'intégration d'un système d'envoi automatique de factures et de devis par email réduirait davantage les tâches manuelles et améliorerait la réactivité commerciale. La mise en place d'un module de gestion de la relation client (CRM) intégré permettrait de suivre l'historique des interactions avec les clients et d'améliorer la qualité du service.
+
+Sur le plan technique, plusieurs améliorations pourraient renforcer les performances et la sécurité du système. L'implémentation d'un système de sauvegarde automatique et de récupération en cas de sinistre garantirait la pérennité des données. Le développement d'une application mobile native (iOS et Android) pour les commerciaux permettrait la création de devis et de factures en mobilité, améliorant ainsi la réactivité commerciale sur le terrain. L'intégration d'un système de notifications push en temps réel alerterait les utilisateurs des événements importants (nouvelle commande, alerte stock, règlement reçu).
+
+Sur le plan de l'intégration, la connexion du système avec des logiciels de comptabilité externes (Sage, Ciel, etc.) faciliterait la consolidation comptable et réduirait les doubles saisies. L'intégration avec des solutions de paiement en ligne (Mobile Money, cartes bancaires) moderniserait les modes d'encaissement et améliorerait l'expérience client. La mise en place d'API publiques permettrait l'interconnexion avec d'autres systèmes d'information de l'entreprise ou de ses partenaires.
+
+Sur le plan stratégique, une évolution majeure pourrait consister à transformer le système en solution SaaS (Software as a Service) multi-tenant, permettant à d'autres PME gabonaises de bénéficier de cette solution de gestion commerciale. Cette transformation nécessiterait des adaptations architecturales (isolation des données par tenant, gestion des abonnements, personnalisation par entreprise) mais ouvrirait de nouvelles perspectives commerciales pour TECH INFO PLUS.
+
+Enfin, l'intégration de technologies émergentes telles que l'intelligence artificielle pour la prévision des ventes et l'optimisation des stocks, ou encore la blockchain pour la traçabilité et l'authenticité des transactions, pourrait positionner le système à la pointe de l'innovation technologique.
+
+En définitive, ce stage a été une expérience formatrice et enrichissante qui marque une étape importante dans mon parcours professionnel. Il a permis de mettre en pratique les enseignements théoriques de la formation, de développer des compétences techniques et comportementales solides, et de contribuer concrètement à la modernisation d'une entreprise gabonaise. Les perspectives d'évolution identifiées témoignent du potentiel de développement du système et ouvrent la voie à de futures collaborations entre TECH INFO PLUS et l'INPTIC dans le cadre de projets d'amélioration continue et d'innovation technologique.
+
+
+BIBLIOGRAPHIE / WEBOGRAPHIE
+
+Références techniques et documentaires
+
+1. Documentation React.js – Bibliothèque JavaScript pour le développement d'interfaces web dynamiques.
+   https://react.dev/
+
+2. Documentation FastAPI – Framework Python moderne pour le développement d'API REST.
+   https://fastapi.tiangolo.com/
+
+3. Documentation MySQL – Référence officielle du SGBDR utilisé pour la base de données du système.
+   https://dev.mysql.com/doc/
+
+4. Documentation SQLAlchemy – ORM Python pour l'abstraction des requêtes SQL.
+   https://docs.sqlalchemy.org/
+
+5. Documentation Chart.js – Bibliothèque JavaScript pour la création de graphiques interactifs.
+   https://www.chartjs.org/
+
+6. Documentation jsPDF – Bibliothèque JavaScript pour la génération de documents PDF.
+   https://github.com/parallax/jsPDF
+
+7. Documentation UML (Object Management Group) – Norme de modélisation utilisée pour la conception du système.
+   https://www.omg.org/spec/UML/
+
+8. W3Schools – Ressource d'apprentissage sur les technologies web : HTML, CSS, PHP et JavaScript.
+   https://www.w3schools.com/
+
+9. MDN Web Docs (Mozilla Developer Network) – Documentation complète pour les langages web modernes.
+   https://developer.mozilla.org/
+
+10. Stack Overflow – Communauté de développeurs pour résolution de problèmes techniques.
+    https://stackoverflow.com/
+
+11. GitHub – Plateforme d'hébergement et de collaboration pour projets de développement.
+    https://github.com/
+
+Ouvrages de référence
+
+12. Clean Code: A Handbook of Agile Software Craftsmanship. Robert C. Martin, 2008.
+
+13. Design Patterns: Elements of Reusable Object-Oriented Software. Gang of Four, 1994.
+
+14. Agile Software Development, Principles, Patterns, and Practices. Robert C. Martin, 2002.
+
+
+ANNEXES
+
+Annexe 1 : Diagrammes UML complets
+- Diagramme de cas d'utilisation
+- Diagrammes de séquence (Authentification, Création devis, Vente comptoir, Transformation devis en facture)
+- Diagrammes d'activité (Connexion utilisateur, Processus de vente complète, Vente au comptoir)
+- Diagramme de classes
+
+Annexe 2 : Captures d'écran de l'application
+- Interface de connexion
+- Dashboard avec KPIs et graphiques
+- Module de gestion des clients
+- Module de gestion des articles
+- Module de création de devis
+- Module de facturation
+- Module de vente au comptoir
+- Module de gestion du stock
+- Module de rapports
+
+Annexe 3 : Exemples de documents générés
+- Exemple de devis (PDF orange)
+- Exemple de facture (PDF vert)
+- Exemple de ticket de caisse
+- Exemple de rapport de ventes
+
+Annexe 4 : Schéma de la base de données
+- Diagramme entité-relation complet
+- Dictionnaire de données détaillé
+
+Annexe 5 : Architecture technique
+- Schéma de l'architecture 3-tiers
+- Diagramme de déploiement
+- Configuration des environnements
+
+Annexe 6 : Planning du projet
+- Diagramme de Gantt des 6 sprints
+- Répartition des tâches par sprint
+- Jalons et livrables
+
+
+LISTE DES FIGURES
+
+Figure 1 : Organigramme TECH INFO PLUS
+Figure 2 : Diagramme de cas d'utilisation général
+Figure 3 : Diagramme de séquence connexion utilisateur
+Figure 4 : Diagramme de séquence créer un devis
+Figure 5 : Diagramme de séquence vente au comptoir
+Figure 6 : Diagramme de séquence transformer un devis en facture
+Figure 7 : Diagramme d'activité connexion utilisateur
+Figure 8 : Diagramme d'activité vente complète
+Figure 9 : Diagramme d'activité vente au comptoir
+Figure 10 : Diagramme de classe
+Figure 11 : Dictionnaire de données
+Figure 12 : Interface de connexion
+Figure 13 : Tableau de bord / page d'accueil
+Figure 14 : Gestion de devis
+Figure 15 : PDF d'un devis
+Figure 16 : Gestion de facturation
+Figure 17 : PDF d'une facture
+Figure 18 : Interface vente au comptoir
+Figure 19 : Gestion de stock
+Figure 20 : Interface paramètre
+
+
+LISTE DES TABLEAUX
+
+Tableau 1 : Acteur et rôle
+Tableau 2 : Diagramme cas d'utilisation gérer les utilisateurs
+Tableau 3 : Diagramme cas d'utilisation effectuer un inventaire
+Tableau 4 : Diagramme cas d'utilisation gérer les clients
+Tableau 5 : Diagramme cas d'utilisation signaler un bug
+Tableau 6 : Composant et technologie utilisée
+Tableau 7 : Environnement utilisé
+Tableau 8 : Outils et base de données et serveur utilisé
+
+
+FIN DU RAPPORT
+

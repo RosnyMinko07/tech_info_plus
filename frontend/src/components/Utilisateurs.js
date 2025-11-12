@@ -120,13 +120,14 @@ const Utilisateurs = () => {
   const enregistrerDroits = async (values) => {
     try {
       await axios.put(`http://localhost:8000/api/utilisateurs/${selectedUtilisateur.id_utilisateur}/droits`, {
-        droits: JSON.stringify(values)
+        droits: values  // Envoyer l'objet directement, pas JSON.stringify
       });
       message.success('Droits mis à jour');
       setDroitsModalVisible(false);
       chargerUtilisateurs();
     } catch (error) {
       message.error('Erreur lors de la mise à jour des droits');
+      console.error('Erreur droits:', error);
     }
   };
 

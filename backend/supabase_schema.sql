@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS article (
   stock_alerte INTEGER DEFAULT 10,
   unite VARCHAR(20) DEFAULT 'PIECE',
   categorie VARCHAR(50),
-  image_path VARCHAR(255),
+  image_path TEXT,
   actif BOOLEAN DEFAULT TRUE,
   id_fournisseur INTEGER,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

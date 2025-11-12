@@ -1,0 +1,32 @@
+2. Méthodologie et déroulement technique
+
+Le développement du système de gestion commerciale a été conduit selon une approche Agile/Scrum, fondée sur des itérations successives de deux semaines. Cette méthode a permis d'assurer une progression continue, des livraisons progressives et une adaptation régulière aux besoins exprimés par les utilisateurs.
+
+Le déroulement s'est articulé en six sprints structurés :
+
+1. Analyse de l'existant et recueil des besoins
+
+Étude des processus commerciaux manuels (cahiers, Excel), identification des limites et contraintes, entretiens avec les futurs utilisateurs (direction, commerciaux, gestionnaire de stock), et définition du cahier des charges fonctionnel détaillé.
+
+2. Conception du système
+
+Élaboration des diagrammes UML (cas d'utilisation, classes, séquences, activités) pour modéliser les processus métier, conception de la base de données avec quinze tables organisées en quatre catégories, et définition de l'architecture 3-tiers.
+
+3. Développement
+
+• Backend : FastAPI (Python), pour la création d'une API RESTful sécurisée assurant la logique métier avec 32 endpoints.
+• Frontend Web : React.js, pour l'interface utilisateur avec 45 composants réutilisables destinés aux administrateurs, vendeurs et comptables.
+• Base de données : PostgreSQL (Supabase), pour la centralisation et la sécurité des données commerciales.
+• Sécurité : JWT pour l'authentification et bcrypt pour le hachage des mots de passe.
+
+4. Tests et intégration
+
+Chaque module a été testé indépendamment (tests unitaires) avant intégration dans le système global (tests d'intégration). Les utilisateurs internes ont participé à des tests fonctionnels afin de valider les fonctionnalités clés (création de factures, suivi de stock, génération de rapports).
+
+5. Déploiement et formation
+
+Déploiement du frontend sur Vercel, du backend sur Render et de la base de données sur Supabase. Formation des employés par profil utilisateur avec documentation détaillée et support post-déploiement.
+
+
+
+

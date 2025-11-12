@@ -253,6 +253,12 @@ function Login() {
           </button>
         </form>
       </div>
+
+      {/* Footer */}
+      <footer className="login-footer">
+        <p>&copy; {new Date().getFullYear()} Tech Info Plus. Tous droits réservés.</p>
+        <p className="footer-version">Version 1.0.0</p>
+      </footer>
     </div>
   );
 }

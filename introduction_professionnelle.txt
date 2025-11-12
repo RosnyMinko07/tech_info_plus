@@ -1,0 +1,107 @@
+INTRODUCTION
+
+Le stage de fin de formation, effectué au sein de l'entreprise TECH INFO PLUS, s'est déroulé sur une période de deux mois, du 05 août au 05 octobre 2025, sous la supervision de Monsieur SONKO SAMBA MONSESILO (encadrant professionnel et Directeur Général) et de Monsieur ENGOANG DALADIER (encadrant académique à l'INPTIC).
+
+Ce stage avait pour objectif principal de concevoir et développer un système informatisé de gestion commerciale destiné à automatiser la facturation, le suivi de stock et l'ensemble des processus commerciaux de l'entreprise. Le projet s'inscrivait dans une démarche réelle de modernisation des outils internes de TECH INFO PLUS, et a permis d'appliquer concrètement les compétences acquises en développement web au sein d'un environnement professionnel structuré.
+
+1. Mission confiée et objectifs du projet
+
+Le stage avait pour mission principale la conception et le développement d'un Système de Gestion Commerciale complet pour TECH INFO PLUS. L'objectif général était de moderniser la gestion commerciale en automatisant les processus manuels utilisés jusque-là (cahiers de signatures, feuilles Excel et documents Word), sources d'erreurs récurrentes, de perte de temps considérable et de manque de traçabilité.
+
+Plus spécifiquement, le projet visait à développer une application web intégrée permettant de :
+
+• Automatiser et fiabiliser la gestion de la facturation avec calculs automatiques (HT, TTC, précompte 9,5% pour les services) ;
+• Assurer un suivi en temps réel des stocks avec alertes automatiques en cas de rupture ou de seuil critique ;
+• Centraliser toutes les données commerciales (clients, articles, fournisseurs, devis, factures, règlements) dans une base de données unique et sécurisée ;
+• Générer automatiquement des documents professionnels (devis en PDF orange, factures en PDF vert, tickets de caisse) ;
+• Offrir des tableaux de bord dynamiques avec indicateurs clés de performance (KPIs) et graphiques pour le pilotage de l'activité commerciale ;
+• Garantir la traçabilité complète de toutes les opérations (qui a fait quoi, quand et pourquoi) ;
+• Renforcer la sécurité et le contrôle d'accès grâce à un système d'authentification JWT avec gestion des rôles (Administrateur, Vendeur, Comptable).
+
+Le choix de ce projet répondait à un besoin réel et urgent de digitalisation interne, identifié suite aux nombreuses difficultés rencontrées avec le système manuel : erreurs de facturation représentant 95% des litiges clients, ruptures de stock fréquentes (environ 15 fois par mois) entraînant des pertes de ventes, absence de rapports fiables empêchant la direction de prendre des décisions éclairées, et perte de temps considérable estimée à 20 heures par semaine en tâches manuelles répétitives.
+
+Le projet s'inscrivait également dans les priorités stratégiques de TECH INFO PLUS en matière de transformation numérique et d'amélioration de la compétitivité sur le marché gabonais des solutions informatiques.
+
+2. Contexte et enjeux de la digitalisation
+
+Le secteur des technologies de l'information et de la communication connaît une évolution constante, marquée par la digitalisation croissante des processus de gestion d'entreprise. Dans ce contexte, les petites et moyennes entreprises (PME) gabonaises sont confrontées à des défis majeurs en matière de gestion de leurs activités quotidiennes, notamment la facturation, le suivi des stocks et la gestion de la relation client.
+
+Pour TECH INFO PLUS, entreprise spécialisée dans les solutions informatiques et les services de télécommunication basée à Port-Gentil, l'informatisation de ses propres processus de gestion apparaissait comme une nécessité stratégique pour plusieurs raisons :
+
+• Améliorer l'efficacité opérationnelle : Réduire drastiquement le temps consacré aux tâches administratives répétitives pour permettre aux équipes de se concentrer sur leur cœur de métier (vente, support client, développement de solutions).
+
+• Garantir la fiabilité des données : Éliminer les erreurs humaines dans les calculs et la saisie manuelle, sources de litiges clients et de pertes financières.
+
+• Optimiser la gestion des stocks : Éviter les ruptures de stock coûteuses en termes de perte de ventes et de satisfaction client, tout en évitant le sur-stockage qui immobilise inutilement la trésorerie.
+
+• Renforcer la crédibilité professionnelle : Générer des documents commerciaux (devis, factures) professionnels et conformes aux normes, renforçant ainsi l'image de marque de l'entreprise auprès de ses clients.
+
+• Faciliter le pilotage de l'activité : Fournir à la direction des rapports fiables et des indicateurs en temps réel pour prendre des décisions stratégiques éclairées.
+
+• Assurer la conformité réglementaire : Garantir la traçabilité des opérations commerciales et financières, exigence légale et comptable au Gabon.
+
+3. Problématique et démarche adoptée
+
+La problématique centrale de ce stage peut être formulée ainsi : Comment concevoir et développer un système de gestion commerciale efficace, intégrant la facturation automatisée, le suivi de stock en temps réel et la gestion client, tout en garantissant une interface intuitive, une architecture technique robuste et une sécurité optimale des données ?
+
+Pour répondre à cette problématique complexe, une démarche méthodologique rigoureuse a été adoptée, structurée en plusieurs phases complémentaires :
+
+Phase d'analyse et de compréhension des besoins : Entretiens approfondis avec la direction et les futurs utilisateurs (commerciaux, gestionnaire de stock, caissier) pour identifier précisément les irritants du système existant et les attentes fonctionnelles. Observation directe des processus manuels en place pour comprendre les flux de travail réels.
+
+Phase de conception : Modélisation UML complète du système (diagrammes de cas d'utilisation, de séquence, d'activité et de classes) pour formaliser l'architecture fonctionnelle. Conception détaillée de la base de données avec identification des entités, relations et contraintes d'intégrité.
+
+Phase de développement : Adoption de la méthodologie Agile/Scrum avec organisation du projet en six sprints de deux semaines chacun. Utilisation de technologies web modernes et performantes (React.js pour le frontend, FastAPI avec Python pour le backend, PostgreSQL pour la base de données). Développement itératif avec livraisons progressives et ajustements continus basés sur les retours des utilisateurs.
+
+Phase de tests et de validation : Tests fonctionnels de chaque module avec les futurs utilisateurs. Tests d'intégration pour vérifier la cohérence des flux de données entre modules. Tests de sécurité et de performance. Recette utilisateur finale avant déploiement.
+
+Phase de déploiement et de formation : Déploiement du système sur infrastructure cloud (Vercel pour le frontend, Render pour le backend, Supabase pour la base de données). Formation des employés par profil utilisateur avec documentation détaillée. Support post-déploiement et corrections d'anomalies.
+
+4. Technologies et choix architecturaux
+
+Le choix des technologies a été guidé par plusieurs critères : performance, sécurité, maintenabilité, évolutivité et adéquation avec les compétences acquises durant la formation.
+
+L'architecture retenue est une architecture 3-tiers moderne séparant clairement les responsabilités :
+
+• Frontend : React.js a été choisi pour développer une interface utilisateur moderne, réactive et intuitive. Cette bibliothèque JavaScript permet de créer des composants réutilisables et offre une excellente expérience utilisateur grâce à son système de gestion d'état et de rendu optimisé.
+
+• Backend : FastAPI (framework Python) a été sélectionné pour sa performance exceptionnelle, sa facilité de développement d'API RESTful, sa validation automatique des données avec Pydantic, et sa génération automatique de documentation interactive (Swagger UI).
+
+• Base de données : PostgreSQL (via Supabase) a été retenu pour sa robustesse, sa conformité aux standards SQL, sa gestion avancée des transactions et son écosystème d'outils professionnels.
+
+• Sécurité : JWT (JSON Web Tokens) pour l'authentification stateless et bcrypt pour le hachage sécurisé des mots de passe.
+
+• Outils complémentaires : Chart.js pour les graphiques interactifs, jsPDF pour la génération de documents PDF, SQLAlchemy comme ORM pour l'abstraction de la base de données.
+
+5. Structure du rapport
+
+Ce rapport s'articule autour de deux parties principales, permettant de présenter de manière exhaustive le contexte, la démarche, les réalisations et les résultats du stage.
+
+La première partie présente l'environnement professionnel du stage et le cadre théorique du projet. Elle comprend la présentation détaillée de TECH INFO PLUS (historique, activités, organisation), l'analyse critique de l'existant avec identification des limites du système manuel, l'étude des solutions envisagées et la justification du choix d'un développement sur mesure, ainsi que la spécification détaillée des besoins fonctionnels et non-fonctionnels.
+
+La deuxième partie expose le déroulement technique du stage et les résultats obtenus. Elle détaille la conception du système avec les diagrammes UML, décrit les phases de développement selon la méthodologie Agile/Scrum, présente l'architecture technique et les technologies utilisées, expose les difficultés rencontrées et les solutions apportées, et analyse les résultats obtenus ainsi que les compétences développées.
+
+6. Apports attendus et portée du projet
+
+Ce stage représente une opportunité unique d'appliquer concrètement les connaissances théoriques acquises durant la formation en Licence Professionnelle en Développement d'Applications Réparties à l'INPTIC, tout en développant des compétences professionnelles essentielles dans plusieurs domaines :
+
+• Développement web full-stack : Maîtrise complète de la chaîne de développement, du frontend au backend en passant par la base de données.
+
+• Gestion de projet Agile : Application pratique de la méthodologie Scrum avec sprints, backlog, démonstrations et rétrospectives.
+
+• Analyse des besoins : Capacité à dialoguer avec des utilisateurs non techniques, comprendre leurs besoins réels et les traduire en spécifications fonctionnelles.
+
+• Architecture logicielle : Conception de systèmes robustes, sécurisés et évolutifs respectant les bonnes pratiques du développement logiciel.
+
+• Résolution de problèmes : Autonomie dans l'identification et la résolution de difficultés techniques complexes.
+
+• Communication professionnelle : Capacité à présenter des solutions techniques à des interlocuteurs variés (direction, utilisateurs finaux, encadrants académiques).
+
+Au-delà de l'acquisition de compétences individuelles, ce projet a une portée concrète pour TECH INFO PLUS. Le système développé est aujourd'hui utilisé quotidiennement par l'ensemble des collaborateurs de l'entreprise et a permis d'améliorer significativement l'efficacité opérationnelle, la fiabilité des données et la satisfaction des clients. Il constitue également une référence démontrant l'expertise de TECH INFO PLUS dans le développement de solutions logicielles sur mesure, pouvant servir de vitrine commerciale auprès de clients potentiels.
+
+Ce stage s'inscrit donc dans une démarche gagnant-gagnant : il permet au stagiaire de développer des compétences professionnelles solides dans un contexte réel, tout en apportant une valeur ajoutée tangible à l'entreprise d'accueil. Il illustre parfaitement la mission de l'INPTIC de former des professionnels immédiatement opérationnels et capables de contribuer à la transformation numérique du tissu économique gabonais.
+
+La suite de ce rapport détaillera l'ensemble du travail réalisé, depuis l'analyse initiale des besoins jusqu'au déploiement final du système, en passant par les phases de conception, de développement et de tests, permettant ainsi d'apprécier la démarche méthodologique adoptée et les résultats obtenus.
+
+
+
+

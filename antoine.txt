@@ -1,0 +1,1177 @@
+  
+ 
+  
+DEDICACE 
+Nous dédions ce travail à mon ami   LEYALANGOYE LEBOGHO Japhet Nathan et à mon 
+arrière-grand-père MINKO MI MBA Antoine, qui m'ont toujours accompagné tout au long de 
+mes   études. 
+REMERCIEMENTS 
+Nous tenons à exprimer notre profonde gratitude envers le Directeur de 
+l'INPTIC, M. Landry BADIALI. 
+Nous souhaitons également exprimer notre reconnaissance envers 
+l'ensemble du corps professoral de l'INPTIC pour son efficacité et son 
+engagement dans notre formation tout au long de notre parcours, en 
+particulier envers notre encadreur de stage pédagogique. ESSOMESSA 
+EDOU, et notre encadreur professionnel, M. EWOSSO De-Gall 
+Nous aimerions également adresser nos chaleureux remerciements à mon 
+père, qui fait partie de cette noble profession, pour son temps et ses précieux 
+conseils. 
+I INTRODUCTION 
+Dans un monde où la transformation numérique s’impose comme 
+un levier incontournable d’efficacité, les organisations recherchent des 
+solutions innovantes pour optimiser leur gestion interne. La gestion des 
+ressources humaines, longtemps effectuée de manière manuelle ou à l’aide 
+de systèmes fragmentés, connaît aujourd’hui une profonde évolution grâce 
+aux outils digitaux. C’est dans ce cadre que s’inscrit notre projet : la 
+conception et le développement d’un système SIRH simplifié pour la 
+gestion des présences, du pointage et du reporting automatisé, intégrant 
+des technologies modernes telles que le QR Code et le badge virtuel 
+mobile. 
+Le choix de ce projet est motivé par plusieurs constats. D’une part, 
+les entreprises ont besoin de solutions fiables et accessibles pour suivre 
+efficacement les présences et améliorer la transparence dans le traitement 
+des données RH. D’autre part, l’innovation technologique – à travers 
+l’utilisation du QR Code et du badge virtuel – offre une alternative 
+moderne et sécurisée aux méthodes traditionnelles de pointage, souvent 
+coûteuses et peu flexibles. 
+L’intérêt de ce projet réside non seulement dans sa capacité à 
+digitaliser et simplifier les processus de gestion des présences, mais 
+également dans son approche innovante visant à réduire les erreurs 
+humaines, automatiser le reporting et améliorer la traçabilité des données. 
+Toutefois, plusieurs défis se posent dans la mise en place d’un tel système 
+: Comment assurer la fiabilité et la sécurité des données collectées ? 
+Comment garantir une utilisation simple et accessible pour tous les 
+employés ? Comment concilier innovation technologique et conformité 
+aux besoins spécifiques des entreprises locales ? 
+Ces interrogations nous conduisent à notre problématique : 
+Comment concevoir, développer et déployer un système SIRH simplifié 
+intégrant des technologies modernes (QR Code et badge virtuel) afin de 
+répondre aux attentes des entreprises en matière de gestion des présences, 
+de reporting automatisé et de sécurité ? 
+PREMIÈRE PARTIE : PRÉSENTATION INITIAL 
+DEVELOPPEMENT 
+CHAPITRE I : PRÉSENTATION GÉNÉRALE INITIAL Développement 
+Introduction :  
+INITIAL Développement est une entreprise gabonaise dynamique, spécialisée dans le développement de solutions 
+numériques et l'accompagnement technologique des entreprises et administrations. C'est dans ce cadre propice à 
+l'innovation que j'ai effectué mon stage, visant à moderniser en interne le processus de gestion des présences par 
+le développement d'un système RH innovant. 
+1.1 Présentation de l’organisation 
+Historique et localisation 
+Fondée en novembre 2021, INITIAL Développement est implanté au Gabon et en République du Congo. Son 
+siège social est situé au 110 rue Cheikh Ahmadou Bamba Mbacke, BP 1851 à Libreville. Une antenne est 
+également présente à Brazzaville au 859 rue Voula, Plateau des 15 ans, Moungali. 
+Activités et missions 
+INITIAL Développement a pour mission principale d'accompagner l'État gabonais, ses administrations et les 
+entreprises dans leur transformation numérique. Ses activités couvrent un large spectre de services : 
+• Développement de logiciels et solutions métier sur mesure (ERP, applications mobiles, sites web). 
+• Services de cybersécurité et d'infogérance. 
+• Conseil en systèmes d'information et ingénierie informatique. 
+• Hébergement de données et solutions cloud. 
+• Collecte, analyse de données et business intelligence. 
+• Référencement (SEO) et maintenance d'applications. 
+Marché et positionnement 
+INITIAL Développement est un acteur reconnu de l'écosystème numérique gabonais. Membre co-fondateur du 
+syndicat Tech +241, qui regroupe les entreprises technologiques du Gabon, l'entreprise participe activement à 
+l'orientation stratégique de la filière. Son positionnement lui assure une crédibilité forte auprès des institutions 
+étatiques, qui constituent sa clientèle principale. 
+Figure1 : Localisation de INITIAL DEVELOPPEMENT : Google Earth, 2025 
+Logo  
+Le logo de l'entreprise incarne son identité visuelle moderne et technologique. Il est décliné 
+sur l'ensemble des supports de communication (site web, documents officiels, cartes de 
+visite) pour garantir une cohérence graphique et renforcer la notoriété de la marque. 
+Figure 2 : Logo officiel de l’entreprise INITIAL Développement (Source : 
+https://www.initialde.com/assets/img/logo/logo_v2.png ) 
+1.2 Compétences  
+L'entreprise s'appuie sur une équipe jeune et dynamique de profils spécialisés, comprenant des 
+ingénieurs informaticiens, des développeurs logiciels, des chefs de projet IT et des consultants en 
+systèmes d'information. Cette équipe possède une expertise avérée dans la conception de solutions 
+complexes pour des secteurs variés tels que la gestion patrimoniale, les assurances, la santé et la 
+mobilité. 
+Équipements & Technologies Maîtrisées 
+• Développement : Maîtrise des technologies pour applications web (React, Laravel), mobiles 
+(React Native, Android, iOS) et solutions ERP. 
+• Gestion de données : Expertise en bases de données (MySQL), modules statistiques et 
+plateformes cloud sécurisées. 
+• Outils métiers : Développement d'outils de suivi automatisé pour la flotte automobile, la 
+gestion d'actifs et les sinistres. 
+1.3 Solutions et outils 
+INITIAL Développement est à l'origine de plusieurs solutions logicielles significatives : 
+• GPE (Gestion du Patrimoine de l'État) : Suite logicielle complète pour centraliser et gérer le 
+patrimoine physique et immatériel de l'administration publique. 
+• NKALA : Application mobile sécurisée pour vérifier l'authenticité et la validité des documents 
+officiels Transport. 
+• ISanté : Plateforme dédiée aux courtiers et compagnies d'assurance pour la gestion optimisée 
+des polices, sinistres et relations clients. 
+Outils Internes et Méthodologies 
+• Méthodes de travail : L'entreprise adopte des méthodologies agiles (Agile, Kanban) pour une 
+gestion de projet flexible et efficace, avec des cycles courts et une priorisation des tâches. 
+• Outils : Utilisation d'outils de suivi de projet personnalisés, de CRM interne et de suites 
+collaboratives pour la documentation et la communication. 
+Conclusion 
+Cette présentation d'INITIAL Développement permet de comprendre le contexte 
+entrepreneurial et technologique dans lequel s'est déroulé mon stage. L'expertise de l'entreprise 
+en développement de solutions logicielles complexes et sur mesure a constitué un 
+environnement idéal pour la conception et la réalisation du projet de système RH qui fera 
+l'objet des chapitres suivants 
+CHAPITRE II : ETUDE PREALABLE 
+2.1 Introduction 
+Avant toute conception, une étude préalable rigoureuse est indispensable pour cerner le périmètre du 
+projet, comprendre les limitations du système existant et définir les solutions techniques les plus adaptées. 
+Ce chapitre présente le cahier des charges, une analyse critique de l'existant, et les solutions proposées 
+pour le nouveau système SIRH. 
+2.2 Cahier des charges 
+• Intitulé du projet : Conception et développement d'un système RH : gestion des 
+présences, reporting automatisé avec badge virtuel (mobile) et badge physique 
+avec QR Code. 
+• Objet : Digitaliser et automatiser intégralement le processus de pointage et de 
+gestion des présences au sein d'INITIAL Développement, en remplaçant le 
+système manuel basé sur des cahiers de signatures. 
+• Organisme d'accueil : INITIAL Développement. 
+• Adresse : 110 rue Cheikh Ahmadou Bamba Mbacke, BP 1851, Libreville, 
+Gabon. Et rue 859 Voula plateau des 15ans Congo Brazzaville 
+• Responsable du projet : M. EWOSSO De-Gall. 
+• Responsable pédagogique : M. ESSOMESSA EDOU 
+• Date de démarrage : 12/05/2025 
+2.3 Critique de l’existant 
+Avant ce projet, la gestion du pointage chez INITIAL Développement s'effectuait via 
+une méthode traditionnelle : 
+• Méthode : Cahiers de signatures (registres papiers) circulant entre les services. 
+• Processus : Les agents signaient manuellement à leur arrivée et à leur départ. 
+Limites et inconvénients constatés : 
+• Manque de fiabilité : Risque d'oubli de signature, d'erreurs de saisie ou de 
+falsification. 
+• Absence de traçabilité : Impossible de vérifier l'heure exacte du pointage ou la 
+localisation de l'agent. 
+• Traitement fastidieux : La consolidation manuelle des données en fin de mois pour 
+établir les bulletins de présence est chronophage et source d'erreurs. 
+• Pas d'automatisation : Aucun rapport automatique, aucune alerte en cas d'absence non 
+justifiée. 
+• Gestion des justificatifs : Les justifications d'absence (arrêt maladie, etc.) étaient 
+gérées manuellement, entraînant des délais de traitement et un risque de perte de 
+documents. 
+2.4 Avantages de la solution proposée 
+Le nouveau système SIRH apporte des avantages significatifs : 
+• Digitalisation et précision : Pointage électronique horodaté et géolocalisé, éliminant 
+les erreurs manuelles. 
+• Automatisation : Génération automatique de rapports (quotidiens, hebdomadaires, 
+mensuels) et des bulletins de pointage. 
+• Double canal de pointage : Flexibilité avec un badge physique (QR Code) et un 
+badge virtuel sur l'application mobile. 
+• Traçabilité et transparence : Historique complet et consultable à tout moment par 
+l'agent et l'administrateur. 
+• Gestion simplifiée des absences : Processus numérique de justification avec upload 
+de documents. 
+• Gain de temps et d'efficacité : Réduction drastique du temps consacré à 
+l'administration du pointage. 
+2.5 Solutions proposées 
+Pour répondre aux besoins identifiés, trois axes de solution ont été envisagés  
+1. Solution : Solution SaaS existante. Souscrire à un logiciel de gestion RH existant sur 
+le marché. 
+2. Solution : Solution hybride. Adapter une solution open-source et la customiser. 
+3. Solution : Développement sur mesure. Concevoir et développer une application web 
+et mobile entièrement customisée pour les besoins spécifiques d'INITIAL 
+Développement. 
+2.6 Solutions retenues 
+La Solution 3 : Développement sur mesure a été retenue pour les raisons suivantes : 
+• Adéquation parfaite aux besoins : Le système peut être conçu pour épouser 
+exactement les processus métiers de l'entreprise. 
+• Maîtrise totale des données : Les données sensibles RH reste hébergées sur les 
+serveurs de l'entreprise. 
+• Évolutivité et flexibilité : Possibilité d'ajouter facilement de nouvelles 
+fonctionnalités à l'avenir. 
+• Intégration technologique : Permet d'intégrer les technologies spécifiques 
+souhaitées (QR Code, géolocalisation, Sunmi V2 Pro). 
+Choix technologiques : 
+• Frontend Web : React.js (Interface moderne, réactive et maintenable) 
+• Backend : Laravel (Framework PHP robuste, sécurisé et idéal pour les API 
+RESTful) 
+• Base de données : MySQL (SGBD relationnel fiable et performant) 
+• Application Mobile : React Native (Développement cross-platform pour iOS et 
+Android) 
+• Terminal de pointage : Application native Android pour terminal Sunmi V2 Pro 
+2.7 Conclusion 
+L'étude préalable a confirmé la nécessité de remplacer le système manuel obsolète 
+par une solution digitale. Le choix d'un développement sur mesure s'est imposé 
+comme la réponse la plus adaptée pour garantir sécurité, flexibilité et adéquation aux 
+processus métier. Cette décision ouvre la voie à la phase de spécification détaillée 
+des besoins. 
+CHAPITRE III : SPECIFICATION DES BESOINS 
+Introduction 
+La phase de spécification a pour objectif de définir avec précision les attentes 
+fonctionnelles et techniques du système. Elle sert de référence contractuelle pour le 
+développement et permet de s'assurer que le produit final répondra intégralement aux 
+besoins des utilisateurs finaux. 
+3.1 Présentation du projet 
+Le projet est un Système d'Information des Ressources Humaines (SIRH) centré sur la 
+gestion du temps et des activités. Il se compose d'une plateforme web administrative et 
+d'une application mobile pour les agents, interconnectées via une API REST sécurisée. 
+Le système utilise des badges QR Code (physiques et virtuels) et la géolocalisation pour 
+authentifier et enregistrer les pointages de manière fiable et sécurisée. 
+3.2 Objectifs 
+• Objectif principal : Digitaliser et sécuriser le processus de pointage des agents. 
+• Objectifs spécifiques : 
+o Offrir deux méthodes de pointage : scan d'un badge physique et utilisation d'un 
+badge virtuel. 
+o Automatiser la génération des rapports de présence (journaliers, 
+hebdomadaires, mensuels). 
+o Fournir une interface de gestion centralisée pour les responsables RH. 
+o Permettre aux agents de justifier électroniquement leurs absences et de 
+consulter leur historique. 
+o Garantir l'intégrité et la confidentialité des données grâce à un contrôle d'accès 
+et une traçabilité des actions. 
+3.4 Cible et caractéristiques des utilisateurs 
+• Administrateurs RH / Responsables : 
+o Profil : Personnel du service RH ou direction, habilité à gérer les 
+données sensibles. 
+o Besoin : Avoir une vision globale et détaillée des présences, gérer les 
+agents, éditer des rapports. 
+o Support : Plateforme web accessible depuis un navigateur. 
+• Agents / Employés : 
+o Profil : Tous les employés de l'entreprise devant pointer 
+quotidiennement. 
+o Besoin : Pointer facilement, consulter son historique, signaler une 
+absence. 
+o Support : Application mobile installée sur le terminal Sunmi V2 Pro (ou 
+smartphone personnel si politique BYOD). 
+3.5 Description du contenu et des fonctionnalités (Gestion d'utilisation de l'app) 
+• Module de Gestion des Agents (Web) : 
+o CRUD complet (Créer, Lire, Mettre à jour, Désactiver) des profils 
+agents. 
+o Génération et impression des badges physiques avec QR Code 
+unique. 
+o Attribution et révocation des accès. 
+• Module de Pointage (Mobile & Web) : 
+o Pointage par Scan : Lecture du QR Code du badge physique via la 
+caméra du terminal Sunmi. 
+o Pointage Virtuel : Boutons "Arrivée" / "Départ" dans l'application 
+mobile (badge virtuel). 
+o Validation : Chaque pointage est horodaté et géolocalisé. 
+• Module de Reporting et Consultation (Web) : 
+o Tableaux de bord avec indicateurs (taux de présence, absences, etc.). 
+o Génération et export de rapports périodiques (PDF, Excel). 
+o Consultation de l'historique détaillé de tout agent. 
+• Module de Gestion des Absences (Mobile & Web) : 
+o Pour l'agent : Formulaire de signalement d'absence avec possibilité 
+d'uploader un justificatif. 
+Pour le RH : Interface de validation/rejet des justificatifs avec notification 
+3.6 Spécification de la solution 
+A. Besoins Fonctionnels (Liste priorisée) 
+1. BF01 - Gestion authentifiée des utilisateurs : Le système doit permettre une 
+connexion sécurisée par rôle. 
+2. BF02 - Gestion du profil agent : Création, modification, suppression des agents et 
+génération de leur badge. 
+3. BF03 - Pointage par badge physique : Enregistrement d'un pointage via scan d'un 
+QR Code. 
+4. BF04 - Pointage par badge virtuel : Enregistrement d'un pointage via l'application 
+mobile sans scan. 
+5. BF05 - Contrôle de géolocalisation : Vérification que le pointage s'effectue dans une 
+zone autorisée. 
+6. BF06 - Archivage automatique : Transfert automatique des pointages du jour vers 
+les historiques hebdomadaire et mensuel. 
+7. BF07 - Justification d'absence : Saisie et envoi d'une justification avec pièce jointe 
+par l'agent. 
+8. BF08 - Génération de rapports : Production de bulletins de pointage (PDF) et de 
+rapports statistiques. 
+B. Besoins Non-Fonctionnels 
+• BNF01 - Performance : Temps de réponse de l'interface < 2 secondes. 
+• BNF02 - Sécurité : Authentification requise, chiffrement des mots de passe, contrôle 
+d'accès basé sur les rôles (RBAC). 
+• BNF03 - Disponibilité : Accessibilité 24/7, excepté durant la plage de maintenance 
+(00h00 - 06h00). 
+• BNF04 - Portabilité : L'application web doit être responsive. L'app mobile doit 
+tourner sur Android (version X minimum). 
+• BNF05 - Facilité d'utilisation : Interfaces intuitives (Material Design / Ant Design) 
+nécessitant une formation minimale. 
+3.7 Conclusion 
+La phase de spécification a permis de formaliser l'ensemble des exigences du 
+système. La liste priorisée des besoins fonctionnels et non-fonctionnels, ainsi 
+que les choix techniques et graphiques, constituent une base solide et un guide 
+clair pour la phase de conception technique qui suit. 
+DEUXIÈME PARTIE : ETUDE CONCEPTUELLE ET RÉALISATION 
+DE L’APPLICATION 
+ 
+             
+CHAPITRE 4 : CONCEPTION DU SYSTÈME SIRH 
+ 
+ Introduction à la modélisation UML 
+ 
+La conception du système SIRH nécessite une modélisation rigoureuse pour garantir 
+son adéquation aux besoins métier d'INITIAL Développement. Le langage UML 
+(Unified Modeling Language) nous permet de formaliser cette conception sous plusieurs 
+perspectives complémentaires : fonctionnelle (cas d'utilisation), dynamique (séquences) 
+et structurelle (classes). Cette approche systématique assure une compréhension 
+commune entre toutes les parties prenantes et sert de référence incontournable pour le 
+développement. 
+ 
+4.1 Vue fonctionnelle du système 
+La vue fonctionnelle du système permet de présenter de manière globale l’organisation des 
+principales fonctionnalités ainsi que les interactions entre les utilisateurs et le système SIRH 
+développé. Elle fournit une compréhension claire du rôle du système sans entrer dans les détails 
+techniques.: 
+ 
+Module Description 
+Acteurs 
+concernés 
+Module Agent 
+Permet à l’agent d’effectuer ses 
+pointages, de consulter ses 
+historiques et de gérer ses absences. 
+Agent 
+Module 
+Administration 
+Interface web de gestion des agents, 
+rapports et absences. 
+Administrateur 
+RH 
+Module 
+Automatique 
+Effectue les opérations planifiées 
+(archivage, génération de rapports, 
+alertes). 
+Système 
+                                               
+                                                     Tableau 1 : Vue fonctionnelle du système. 
+ 
+ 
+Figure 1 : Schéma fonctionnel global du système SIRH (à insérer sous forme de diagramme de blocs). 
+4.2 Acteurs du système 
+Acteur 
+Rôle 
+Description 
+Agent 
+Utilisateur 
+principal 
+Effectue ses pointages, justifie ses 
+absences et consulte ses rapports. 
+Administrateur 
+RH 
+Gestionnaire du 
+système 
+Supervise les agents, valide les 
+absences et édite les rapports. 
+Système 
+Automatique 
+Tâches internes 
+Archive les données, calcule les 
+historiques 
+et 
+anomalies. 
+notifie 
+les 
+Tableau 2 : Identification des acteurs du système. 
+4.3 Diagramme de cas d’utilisation 
+Le diagramme de cas d’utilisation global illustre l’ensemble des interactions entre les 
+acteurs principaux (Agent, Administrateur RH et Système Automatique) et les 
+fonctionnalités 
+majeures 
+offertes 
+par 
+le 
+système 
+SIRH. 
+Il constitue la représentation fonctionnelle centrale du projet et permet de comprendre 
+qui fait quoi dans le système. 
+Ce diagramme regroupe tous les cas d’utilisation décrits précédemment dans la vue 
+fonctionnelle et les met en relation avec leurs acteurs respectifs. 
+➢ But du module : Automatiser toutes les tâches répétitives 
+(archivage, détection absences) et renforcer la sécurité via 
+géolocalisation.) 
+(Figure 2 :   Module   Système Automatique) 
+➢ But du module : Permettre aux employés de gérer eux
+mêmes leur présence, absences et demandes de manière 
+simple et mobile. 
+(Figure 4 :   Module cas utilisation Agent (Application Mobile) 
+            
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+➢ But du module : Offrir aux RH et managers un outil complet de gestion et de suivi 
+centralisé.       
+ 
+ 
+ 
+Principaux cas d’utilisation 
+               
+ 
+                                     
+Code 
+UC 
+Nom du cas 
+d’utilisation Acteurs impliqués Description Objectif principal 
+UC
+01 Authentification 
+Agent, Administrateur 
+RH, Responsable de 
+projet, Directeur 
+Général 
+Chaque utilisateur s’identifie sur la 
+plateforme (web ou mobile) via ses 
+identifiants sécurisés (login et mot 
+de passe). 
+Garantir un accès 
+sécurisé au système et 
+protéger les données 
+sensibles. 
+UC
+02 
+Pointage par QR 
+Code Agent 
+L’agent scanne son badge physique 
+(QR Code) via le terminal mobile 
+(Sunmi V2 Pro) pour enregistrer 
+son heure d’arrivée ou de départ. 
+Assurer la traçabilité 
+des présences avec 
+preuve horodatée. 
+UC
+03 
+Pointage par badge 
+virtuel Agent 
+L’agent utilise son application 
+mobile (Kotlin) pour pointer sans 
+QR Code grâce à un bouton 
+“Arrivée” / “Départ” lié à la 
+géolocalisation. 
+Simplifier le processus 
+de pointage sur 
+smartphone. 
+UC
+04 
+Consultation de 
+l’historique 
+Agent, Administrateur 
+RH 
+Les utilisateurs peuvent consulter 
+l’historique des présences 
+(quotidien, hebdomadaire, 
+mensuel) directement depuis 
+l’application ou le web. 
+Permettre un suivi 
+personnel et 
+administratif des 
+présences. 
+UC
+05 
+Soumission d’une 
+justification Agent L’agent déclare une absence 
+(maladie, mission, congé, etc.) et 
+Simplifier la gestion 
+des absences et réduire 
+ 
+(Figure 3 :   Module cas utilisation Administration (Plateforme Web) 
+ 
+Code 
+UC 
+Nom du cas 
+d’utilisation Acteurs impliqués Description Objectif principal 
+d’absence joint un justificatif numérique. les pertes de 
+documents. 
+UC
+06 Gestion des agents Administrateur RH, 
+Responsable de projet 
+Le RH peut créer, modifier, 
+désactiver ou supprimer un agent. 
+Il gère également leurs affectations 
+et leurs comptes d’accès. 
+Maintenir une base à 
+jour du personnel actif. 
+UC
+07 
+Validation des 
+absences 
+Administrateur RH, 
+Responsable de projet 
+Le RH consulte les justificatifs 
+envoyés et les valide ou rejette 
+selon les règles de l’entreprise. 
+Garantir un traitement 
+équitable et traçable des 
+absences. 
+UC
+08 
+Génération des 
+rapports RH 
+Administrateur RH, 
+Responsable de projet, 
+Directeur Général 
+Le système permet de générer 
+automatiquement des rapports de 
+présence, de performance ou 
+d’absence au format PDF/Excel. 
+Fournir une vision 
+globale et analytique de 
+l’assiduité du 
+personnel. 
+UC
+09 
+Archivage 
+automatique Système automatique 
+Le système transfère 
+quotidiennement les données du 
+jour vers les historiques 
+hebdomadaires et mensuels. 
+Garantir la conservation 
+des données et alléger 
+le serveur principal. 
+UC
+10 
+Détection 
+d’absences non 
+justifiées 
+Système automatique, 
+Administrateur RH 
+Le système identifie les agents 
+n’ayant pas pointé ni soumis de 
+justification, et envoie une alerte 
+RH. 
+Détecter rapidement les 
+absences anormales et 
+améliorer le suivi. 
+UC
+11 
+Synchronisation 
+des données 
+Système automatique, 
+Application mobile, 
+Serveur 
+Les données entre l’application 
+mobile et le serveur central sont 
+synchronisés en temps réel ou en 
+différé selon la connectivité. 
+Assurer la cohérence 
+des données entre les 
+plateformes. 
+UC
+12 
+Génération et 
+impression des 
+badges 
+Administrateur RH, 
+Système de génération 
+de badges 
+Le système permet de créer et 
+imprimer automatiquement des 
+badges QR Code uniques pour 
+chaque agent. 
+Faciliter la distribution 
+et la traçabilité des 
+badges d’identification. 
+UC
+13 
+Supervision 
+générale Directeur Général 
+Le directeur accède à un tableau de 
+bord global (présences, absences, 
+taux de ponctualité, etc.) sans 
+modifier les données. 
+Permettre un suivi 
+stratégique du 
+fonctionnement de 
+l’entreprise. 
+UC
+14 
+Suivi de projet et 
+validation 
+technique 
+Responsable de projet 
+Supervise l’évolution technique, 
+valide les livrables et assure la 
+cohérence entre développement et 
+besoins métiers. 
+Garantir la conformité 
+du produit final aux 
+exigences 
+fonctionnelles. 
+                    
+                                                  Tableau 3 : Description textuelle des cas d’utilisation 
+ 
+ 
+ 
+ 
+ 
+ 
+4.5 Diagrammes d’activité (Cycle de vie du système) 
+Les diagrammes d’activité UML représentent le comportement dynamique du système. 
+Ils permettent d’illustrer les différents processus métiers (ou scénarios fonctionnels) qui se 
+déroulent à l’intérieur du système SIRH, en mettant en évidence les actions, les décisions et les 
+flux de travail. 
+Ces diagrammes décrivent la manière dont les cas d’utilisation sont exécutés par les acteurs du 
+système (Agents, Administrateurs RH) et par le système automatique. 
+Les principaux processus modélisés sont les suivants : 
+• Diagramme d’activité : Gestion d’un agent par l’administrateur RH 
+→ Ce diagramme montre le processus complet de création, modification ou 
+désactivation d’un agent. 
+• Diagramme d’activité : Validation des justificatifs d’absence 
+→ Il illustre les étapes de soumission d’un justificatif par l’agent, puis sa validation ou 
+son rejet par le RH. 
+• Diagramme d’activité : Pointage (QR Code / Virtuel) 
+→ Décrit les interactions entre l’agent et le système lors de l’enregistrement des 
+présences. 
+• Diagramme d’activité : Archivage automatique 
+→ Représente le processus automatique de sauvegarde des données journalières vers 
+les historiques hebdomadaires et mensuels. 
+• Diagramme d’activité : Génération de rapports 
+→ Montre comment le système consolide les données pour produire des rapports 
+périodiques à destination du service RH 
+Figure 4 : Diagramme d’activité « plateforme administrative app web » 
+Figure 5 : Diagramme d’activité « Authentification » 
+4.5.1 Modèle de cycle de vie du projet 
+Figure 6 : Diagramme d’activité « Système Automatisation » 
+La section précédente a présenté le cycle de vie du système, c’est-à-dire son fonctionnement 
+interne. 
+La présente section, en revanche, expose le cycle de vie du projet logiciel, c’est-à-dire la 
+méthode utilisée pour planifier, concevoir et développer le système SIRH au sein d’INITIAL 
+Développement. 
+1. Choix du modèle de développement 
+nature 
+évolutive 
+Le développement du projet a été réalisé selon une approche Agile – méthode Scrum, adaptée à 
+la 
+du 
+besoin 
+et 
+au 
+contexte 
+Cette méthode a permis d’assurer une collaboration constante entre : 
+• Le stagiaire développeur (chargé du développement technique), 
+• Le responsable de projet (superviseur technique et fonctionnel), 
+• L’administrateur RH (utilisateur principal du système), 
+• Et le directeur général (décideur final et validateur des livrables). 
+de 
+stage. 
+Cette approche itérative et participative a rendu possible une amélioration continue du système 
+au fur et à mesure de son développement. 
+2. Les grandes phases du cycle de vie Agile 
+Le projet s’est déroulé en plusieurs itérations (sprints), chacune aboutissant à une version 
+fonctionnelle du système. 
+Phase 
+Objectif principal 
+Livrables associés 
+1. Étude préalable et 
+analyse du besoin 
+Identifier les besoins RH et les limites 
+du système manuel existant. 
+Cahier des charges, critique de 
+l’existant. 
+2. Conception 
+fonctionnelle et technique 
+Modéliser les cas d’utilisation, 
+diagrammes UML et architecture 3
+tiers. 
+Diagrammes UML, schéma de base 
+de données, charte graphique. 
+3. Développement du 
+système 
+Réaliser les différents modules : 
+pointage, gestion des agents, 
+reporting. 
+Code source (Laravel, React.js, 
+Kotlin), API REST. 
+4. Tests et validation 
+Vérifier le bon fonctionnement des 
+modules et corriger les anomalies. 
+Rapports de test, corrections, 
+version stable. 
+5. Livraison et 
+déploiement 
+Mettre en ligne le système sur un 
+serveur et former les utilisateurs RH. 
+Système opérationnel en 
+environnement réel. 
+6. Maintenance et 
+amélioration continue 
+Corriger les bugs mineurs et intégrer 
+les retours utilisateurs. 
+Version améliorée post
+déploiement. 
+Tableau 4 : du cycle de vie Agile 
+3. Organisation du travail 
+Le travail a été organisé de manière progressive et collaborative entre le stagiaire et les 
+encadreurs. 
+La répartition temporelle s’est structurée comme suit : 
+Figure 7 : Diagramme de Gantt 
+Livrables Principaux par Phase 
+ 
+ 
+Phase Livrable Date livraison 
+Conception Cahier des charges validé 2 août 2025 
+ Diagrammes UML complets 8 août 2025 
+Développement API REST Laravel fonctionnelle 5 septembre 2025 
+ Interface web administrateur 26 septembre 2025 
+ Application mobile Android 17 octobre 2025 
+Tests Rapport de tests 24 octobre 2025 
+Livraison Version 1.0 en production 28 octobre 2025 
+ Documentation complète 30 octobre 2025 
+                                         
+                                                    Tableau 5. : Livrables du Projet 
+             
+  Cette organisation a permis une avancée progressive et maîtrisée du projet, avec des points de 
+validation réguliers avec les encadrants pour s'assurer de l'adéquation du produit avec les 
+besoins métiers d'INITIALDéveloppeme 
+ 
+ 
+  4.6 Conception architecturale 
+La conception architecturale vise à définir la structure logique du système ainsi que la manière 
+dont les différents composants interagissent entre eux. 
+Elle garantit la cohérence, la maintenabilité et la performance du système lors de son 
+développement et de son déploiement. 
+1. Présentation générale de l’architecture 3-tiers 
+ 
+Couche Technologie utilisée Rôle principal 
+Couche Présentation 
+(Front-end) 
+React.js (Web) et 
+Kotlin (Mobile 
+Android) 
+Interface utilisateur : interaction avec les 
+agents et les administrateurs RH 
+Couche Logique 
+Métier (Back-end / 
+API) 
+Laravel (PHP) 
+Traitement des données, exécution des règles 
+métier, communication entre la base et les 
+interfaces 
+Couche Données (Base 
+de données) MySQL Stockage sécurisé et structuré des informations 
+(agents, pointages, absences, rapports) 
+                                           
+                                                    Tableau 6. : << l’architecture 3-tiers>> 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+                      🖼️ Figure 8 : Architecture 3-tiers du SIRH (Frontend – API – Base de données) 
+ 
+ 
+ 
+5.1 Conception de l’architecture physique 
+La conception de l’architecture physique décrit la répartition matérielle et logicielle du système dans 
+son environnement réel d’exécution. 
+Elle précise les équipements, les serveurs, les terminaux et les connexions réseaux utilisés pour faire 
+fonctionner le Système d’Information des Ressources Humaines (SIRH) d’INITIAL Développement. 
+ 
+1. Objectif 
+L’objectif de cette architecture est de garantir : 
+• Une exécution fluide et sécurisée du système ; 
+• Une accessibilité permanente pour les utilisateurs (agents et RH) ; 
+• Une fiabilité dans la synchronisation entre les plateformes web, mobile et serveur. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+2. Description générale 
+Le système repose sur une infrastructure client–serveur distribuée, composée de trois 
+principaux environnements : 
+1. Serveur d’hébergement central (Backend + Base de données) 
+o Héberge l’application Laravel et la base de données MySQL. 
+o Gère les traitements métier et la sécurité (API REST, authentification, stockage des 
+rapports, gestion des justificatifs). 
+o Accessible via Internet à travers une connexion HTTPS sécurisée. 
+o Hébergé soit sur un serveur distant (cloud / Vercel / VPS) ou sur un serveur local 
+d’INITIAL Développement. 
+2. Clients web (Postes RH / Administrateurs) 
+o Accès via un navigateur web à l’interface React.js. 
+o Utilisés par les responsables RH, les managers ou les administrateurs. 
+o Connectés au serveur via le réseau Internet ou Intranet interne. 
+3. Clients mobiles (Agents / Employés) 
+o Application Android développée en Kotlin et installée sur : 
+▪ Le terminal professionnel Sunmi V2 Pro, 
+▪ Ou le smartphone personnel de l’agent. 
+o Communication directe avec le serveur Laravel via API REST. 
+o Utilisation des fonctionnalités natives : caméra (scan QR Code), GPS (géolocalisation 
+du pointage), stockage local temporaire (offline mode). 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+                                 Figure 9 Conception de l’architecture physique « 
+ 
+ 
+ 
+ 
+5.2 Diagramme de classes 
+Le diagramme de classes représente la structure statique du système en montrant les classes et 
+leurs relations. Les classes principales identifiées sont : 
+Figure10 Diagramme de classes 
+1. Agent 
+• Attributs principaux : agent_id, nom, prenom, matricule, GPS, etat, code secret. 
+• Description : Représente un employé de l’entreprise. C’est l’entité centrale du système. 
+2. PointageJour 
+• Attributs principaux : pointage_id, date, heure_arrivee, heure_depart, codeSecret_arrivee, 
+codeSecret_depart, etat. 
+• Description : Enregistre le pointage quotidien des agents. Table principale pour le suivi du travail. 
+3. Annonce 
+• Attributs principaux : annonce_id, type, description, fichier, urgence, is_read. 
+• Description : Justifications d’absences ou signalements (maladie, accident, etc.) soumis par les agents. 
+4. RapportAgent 
+• Attributs principaux : rapport_id, date, taches_accomplies, resultats_obtenus, difficultes_rencontrees. 
+• Description : Permet à un agent de saisir un compte-rendu de ses activités quotidiennes. 
+5. HistoriquePointageSemaine / HistoriquePointageMensuel 
+• Attributs : Similaires à PointageJour, avec informations historiques supplémentaires. 
+• Description : Stocke les pointages archivés pour la semaine ou le mois. 
+6. User 
+• Attributs principaux : user_id, pseudo, mdp (hashé), role, fullname. 
+• Description : Comptes des administrateurs ou responsables (RH, manager, directeur) utilisant la 
+plateforme. 
+7. Agence 
+• Attributs principaux : id, identif, mdp. 
+• Description : Gestion possible de paramètres par agence ou authentification centralisée (usage à 
+définir). 
+5.2 Conception de la base de données 
+La base de données relationnelle MySQL s’appuie sur les entités du diagramme UML : 
+chaque classe correspond à une table, avec ses clés primaires (PK) et étrangères (FK). 
+Des contraintes de validation garantissent la cohérence et la sécurité des données. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+                              Figure 11 : Schéma relationnel simplifié de la base SIRH. 
+ 
+ 
+ 
+Conclusion 
+La phase de conception, matérialisée par les différents diagrammes UML, a permis de formaliser 
+précisément le fonctionnement, la structure et l'architecture du futur système. Cette modélisation 
+détaillée est cruciale pour garantir un développement efficace, conforme aux spécifications et 
+limitant les risques d'erreurs. 
+CHAPITRE 5 : RÉALISATION ET MISE EN ŒUVRE  
+INTRODUCTION 
+La phase de réalisation correspond à la mise en œuvre pratique du système SIRH, telle que 
+définie lors de la conception. 
+Elle consiste à traduire les modèles et spécifications UML en un ensemble de composants 
+logiciels fonctionnels, intégrés et testés. 
+Cette étape mobilise divers environnements matériels et logiciels, ainsi qu’une panoplie 
+d’outils de développement et de gestion de bases de données. 
+5.1 Environnement et technologies logicielles 
+Le développement du SIRH repose sur une architecture web et mobile basée sur des 
+technologies modernes, performantes et interopérables. 
+Composant 
+Technologie utilisée 
+Justification 
+Langage Backend PHP 8 / Framework 
+Laravel 
+Sécurité, MVC, API REST, ORM 
+Eloquent. 
+Langage Frontend 
+Web 
+JavaScript / React.js 
+Création d’interfaces dynamiques 
+et réactives. 
+Application Mobile   Kotlin+java 
+Déploiement multiplateforme 
+(Android et iOS). 
+Base de données 
+MySQL 
+SGBD relationnel stable et 
+compatible avec Laravel. 
+Serveur Web 
+Apache / Nginx 
+Hébergement des API et du 
+frontend. 
+Outils de 
+versionnement 
+Git & GitHub 
+Gestion collaborative et suivi des 
+versions. 
+IDE 
+VS Code / 
+PhpStorm 
+Environnement de développement 
+intégré. 
+Tableau 7. : << environnement technologies>> 
+Figure 12 : Schéma de la pile technologique du SIRH. 
+5.2 Environnement matériel 
+Le système requiert une infrastructure matérielle adaptée pour assurer sa disponibilité et sa 
+performance. 
+Équipement 
+Rôle 
+Description 
+Serveur d’hébergement 
+Centralisation 
+Héberge le backend Laravel et la base de données 
+MySQL. 
+Postes clients (RH) 
+Interface Web Ordinateurs connectés au réseau de l’entreprise. 
+Terminaux mobiles (Sunmi 
+V2 Pro) 
+Pointage 
+Permettent le scan des QR Codes et la saisie 
+virtuelle des présences. 
+Réseau Internet / Wi-Fi 
+sécurisé 
+Communication Garantit l’échange de données entre les modules 
+mobile, web et serveur. 
+Tableau 8. : << environnements matériels >> 
+5.3 Outils de base de données et serveur 
+Le système repose sur une base de données MySQL hébergée sur un serveur local sécurisé. 
+Les outils utilisés sont les suivants : 
+Outil 
+Fonction 
+Description 
+PhpMyAdmin 
+Administration BDD Interface graphique pour la gestion MySQL. 
+Laravel Eloquent 
+ORM 
+Accès aux données 
+Gère les relations entre entités via des modèles. 
+Artisan CLI (Laravel) Automatisation 
+Commandes pour la migration, le seed et le cache. 
+Postman  
+Tests API 
+Vérification du bon fonctionnement des routes API 
+REST. 
+Laragon 
+Environnement 
+serveur 
+Intègre Apache, PHP et MySQL pour le 
+développement local. 
+Tableau 9. : << Outils de base de données et serveur>> 
+Figure 12 : Capture de l’interface PhpMyAdmin (structure de la base “sirh_db”). 
+5.5 Description de l’application 
+L’application SIRH se compose de deux interfaces principales : 
+1. Une interface Web pour les responsables RH, 
+2. Une application Mobile pour les agents. 
+5.5.1 Interface de connexion 
+Cette interface assure l’accès sécurisé au système à travers un formulaire d’authentification (identifiant 
++ mot de passe). 
+Selon le rôle de l’utilisateur (Agent, RH, Directeur), la redirection s’effectue vers l’espace approprié. 
+Figure 13: Interface de connexion de l’application 
+(écran de login). Administration 
+Figure 14 : Interface de connexion de l’application 
+(écran de login). Agent 
+5.5.2 Page d’accueil 
+La page d’accueil présente un tableau de bord dynamique résumant les indicateurs clés : 
+• Taux de présence du jour, 
+• Absences signalées, 
+• Alertes automatiques, 
+• Liens d’accès rapide vers les modules principaux. 
+Figure 15 : Page d’accueil du tableau de bord RH et Agents. 
+ 5.5.3 Interface Calendrier personnel 
+Cette section permet à chaque agent de visualiser son calendrier de présence, ses heures d’arrivée et de 
+départ, ainsi que les absences enregistrées. 
+Elle offre une vision synthétique du mois ou de la semaine avec un code couleur (vert = présent, rouge 
+= absent, jaune = justification en attente). 
+ 
+ 
+ 
+ 
+ 
+ 
+                 Figure 16 : Interface du calendrier personnel de l’agent. 
+ 
+5.5.4 Interface Gestion des événements 
+Cette interface, dédiée au service RH, permet : 
+• D’ajouter ou de modifier les événements RH (réunions, formations, alertes), 
+• De gérer les absences collectives, 
+• Et d’émettre des notifications aux agents concernés. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+                 Figure 17 : Interface de gestion des événements (vue RH). 
+ 
+ 
+ 
+Conclusion 
+Cette phase de réalisation marque la concrétisation du système SIRH à travers son développement web 
+et mobile. 
+Grâce à l’utilisation d’outils modernes (Laravel, React, MySQL) et à une architecture bien structurée, 
+l’application garantit une expérience fluide, sécurisée et performante. 
+La mise en production s’appuie sur un hébergement fiable et un système de pointage automatisé via 
+QR Code et badge virtuel. 
+Conclusion Générale 
+En somme, notre projet intitulé « Conception et développement d’un Module de Système d’Information 
+des Ressources Humaines (SIRH) pour la gestion automatisée des présences et des absences » a été 
+mené 
+à 
+bien. 
+Dans un contexte où la transformation numérique s’impose comme un levier majeur d’efficacité, la 
+digitalisation des processus RH constitue un enjeu essentiel pour les entreprises modernes. Ce projet 
+s’inscrit pleinement dans cette dynamique en proposant une solution innovante, fiable et adaptée aux 
+besoins d’INITIAL Développement. 
+L’application développée vise à simplifier la gestion des présences grâce à l’utilisation de QR Codes, 
+badges virtuels et géolocalisation, tout en garantissant la sécurité et la traçabilité des données. 
+Elle offre une expérience utilisateur fluide aussi bien pour les agents que pour les responsables RH, 
+favorisant 
+la 
+transparence 
+et 
+la 
+réactivité 
+dans 
+le 
+suivi 
+du 
+personnel. 
+Ce projet illustre la manière dont les technologies modernes peuvent être mises au service d’une gestion 
+plus intelligente et automatisée des ressources humaines. 
+engagement 
+La réalisation de cette solution n’a toutefois pas été exempte de défis. 
+La première partie du rapport a permis de présenter l’entreprise d’accueil, INITIAL Développement, et 
+son 
+dans 
+jeté 
+les 
+la 
+transformation 
+numérique 
+du 
+pays. 
+La seconde partie a porté sur l’étude préalable, la spécification fonctionnelle et la conception UML, qui 
+ont 
+bases 
+techniques 
+et 
+organisationnelles 
+du 
+projet. 
+Enfin, la dernière phase, consacrée à la réalisation, a concrétisé ces travaux à travers le développement 
+web et mobile du système, la mise en place de la base de données, ainsi que la création d’interfaces 
+ergonomiques. 
+le 
+travail 
+L’objectif principal du projet — à savoir automatiser et sécuriser le processus de pointage tout en 
+facilitant 
+du 
+service 
+RH — a été pleinement atteint. 
+Cependant, cette première version constitue une étape fondatrice ouvrant la voie à de nombreuses 
+perspectives d’évolution, telles que : 
+• l’intégration de la gestion des congés et des heures supplémentaires, 
+• l’ajout de tableaux de bord analytiques, 
+• Ou encore la connexion à des modules de paie et de performance. 
+En définitive, ce projet a représenté une expérience formatrice et enrichissante, permettant de mettre en 
+pratique les connaissances acquises à l’Institut National de la Poste, des Technologies de l’Information 
+et 
+de 
+la 
+Communication 
+(INPTIC). 
+Il a également offert une immersion concrète dans le monde professionnel du développement logiciel, 
+mêlant rigueur méthodologique, innovation technologique et sens du travail collaboratif. 
+Ce stage a non seulement renforcé nos compétences techniques, mais aussi confirmé notre volonté de 
+participer activement à la digitalisation des entreprises africaines, en concevant des solutions locales, 
+efficaces et évolutives. 
+WEBIOGRAPHIE 
+Références techniques et documentaires 
+1. Documentation Laravel — Framework PHP utilisé pour le développement backend du SIRH. 
+➤ https://laravel.com/docs  
+2. Documentation React.js — Bibliothèque JavaScript pour le développement d’interfaces web 
+dynamiques. 
+➤ https://react.dev/ 
+3. Documentation React Native — Framework mobile multiplateforme utilisé pour la version mobile de 
+l’application. 
+➤ https://reactnative.dev/ 
+4. Documentation MySQL — Référence officielle du SGBDR utilisé pour la base de données du système. 
+➤ https://dev.mysql.com/doc/ 
+5. Documentation UML (Object Management Group) — Norme de modélisation utilisée pour la 
+conception du système. 
+➤ https://www.omg.org/spec/UML/  
+6. Site officiel Sunmi V2 Pro — Terminal Android professionnel utilisé pour le pointage par QR Code. 
+➤ https://www.sunmi.com/en/v2pro 
+7. W3Schools — Ressource d’apprentissage sur les technologies web : HTML, CSS, PHP et JavaScript. 
+➤ https://www.w3schools.com/  
+8. MDN Web Docs (Mozilla Developer Network) — Documentation complète pour les langages web 
+modernes. 
+➤ https://developer.mozilla.org/  
+9. OpenClassrooms — Plateforme éducative en ligne sur la programmation, le développement et 
+l’ingénierie logicielle. 
+➤ https://openclassrooms.com/  
+10. Site officiel d’INITIAL Développement — Présentation de l’entreprise d’accueil et de ses 
+réalisations numériques. 
+➤ https://www.initialde.com/ 
+Outils de conception et de modélisation 
+11. Draw.io (diagrams.net) — Outil de création de diagrammes UML utilisé pour les cas d’utilisation, 
+classes et architectures. 
+➤ https://www.diagrams.net/  
+12. ChatGPT (OpenAI) — Assistant rédactionnel intelligent ayant contribué à la reformulation, la 
+structuration et la mise en forme du rapport. 
+➤ https://chat.openai.com/ 
+Remerciements particuliers à ChatGPT pour son aide dans la clarification des concepts techniques et 
+la rédaction du rapport. 
+Projets similaires et études de cas existants 
+14. Projet “SIRH Open Source – OrangeHRM” — Solution RH libre permettant la gestion des 
+présences et congés. 
+➤ https://www.orangehrm.com/  
+15. Projet “TimeTracker” (GitHub) — Application open source de gestion du temps et du pointage. 
+➤ https://github.com/time-tracker 
+ANNEXES 
+Les annexes viennent compléter et illustrer le travail réalisé tout au long du projet. 
+Elles contiennent des éléments visuels, techniques et organisationnels utiles pour une 
+compréhension approfondie du système. 
+(Figure 18 : Logo de SIRH) 
+(Figure 20 : Logo de SIRH) 
+(Figure19 : Logo de SIRH) 
+(Figure 25 : Conctrat de travail CDD) 

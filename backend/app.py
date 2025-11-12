@@ -2995,16 +2995,30 @@ async def update_droits_utilisateur(utilisateur_id: int, droits_data: dict, db: 
     
     import json
     try:
-        # Convertir les droits en JSON
-        droits_json = json.dumps(droits_data.get('droits', {}))
+        # Récupérer les droits
+        droits = droits_data.get('droits', {})
+        
+        # Vérifier si c'est déjà une string JSON (pour rétrocompatibilité)
+        if isinstance(droits, str):
+            # Si c'est déjà une string, on la parse puis re-stringify pour valider
+            droits = json.loads(droits)
+        
+        # Convertir en JSON string pour stockage en base
+        droits_json = json.dumps(droits)
         utilisateur.droits = droits_json
+        
+        print(f"✅ Droits mis à jour pour utilisateur {utilisateur_id}: {droits_json}")
         
         db.commit()
         db.refresh(utilisateur)
         return {"message": "Droits mis à jour avec succès", "utilisateur": utilisateur}
+    except json.JSONDecodeError as e:
+        db.rollback()
+        print(f"❌ Erreur parsing JSON droits: {e}")
+        raise HTTPException(status_code=400, detail=f"Format JSON invalide: {str(e)}")
     except Exception as e:
         db.rollback()
-        print(f"Erreur mise à jour droits: {e}")
+        print(f"❌ Erreur mise à jour droits: {e}")
         raise HTTPException(status_code=400, detail=f"Erreur: {str(e)}")
 
 

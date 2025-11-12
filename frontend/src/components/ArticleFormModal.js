@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes } from 'react-icons/fa';
+import { FaTimes, FaImage } from 'react-icons/fa';
 import { articleService, fournisseurService } from '../services/api';
 import { toast } from 'react-toastify';
 import { preventNegativeNumbers } from '../utils/numberValidation';
 
 function ArticleFormModal({ article, onClose, onSuccess }) {
   const [fournisseurs, setFournisseurs] = useState([]);
+  const [imagePreview, setImagePreview] = useState(null);
   const [formData, setFormData] = useState({
     code_article: '',
     designation: '',
@@ -40,6 +41,10 @@ function ArticleFormModal({ article, onClose, onSuccess }) {
         image_path: article.image_path || '',
         id_fournisseur: article.id_fournisseur || null
       });
+      // Charger l'aperçu de l'image existante
+      if (article.image_path) {
+        setImagePreview(article.image_path);
+      }
     } else {
       generateCodeArticle();
     }
@@ -70,6 +75,47 @@ function ArticleFormModal({ article, onClose, onSuccess }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Vérifier le type de fichier
+      if (!file.type.startsWith('image/')) {
+        toast.error('Veuillez sélectionner une image valide');
+        return;
+      }
+      
+      // Vérifier la taille (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('L\'image ne doit pas dépasser 5 MB');
+        return;
+      }
+
+      // Créer un aperçu de l'image
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const imageData = reader.result;
+        console.log('Image chargée, taille:', imageData.length, 'caractères');
+        setImagePreview(imageData);
+        setFormData(prev => ({ ...prev, image_path: imageData }));
+      };
+      reader.onerror = () => {
+        console.error('Erreur lors de la lecture du fichier');
+        toast.error('Erreur lors de la lecture de l\'image');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImagePreview(null);
+    setFormData(prev => ({ ...prev, image_path: '' }));
+    // Réinitialiser aussi l'input file
+    const fileInput = document.getElementById('image-upload');
+    if (fileInput) {
+      fileInput.value = '';
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -252,6 +298,82 @@ function ArticleFormModal({ article, onClose, onSuccess }) {
                 rows="3"
               />
             </div>
+
+            {/* Upload d'image (uniquement pour les produits) */}
+            {formData.type_article === 'PRODUIT' && (
+              <div className="input-group full-width">
+                <label className="input-label">
+                  <FaImage /> Image du produit
+                </label>
+                
+                {imagePreview ? (
+                  <div style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    alignItems: 'center', 
+                    gap: '10px',
+                    padding: '15px',
+                    border: '2px dashed #ddd',
+                    borderRadius: '8px',
+                    backgroundColor: '#f9f9f9'
+                  }}>
+                    <img 
+                      src={imagePreview} 
+                      alt="Aperçu" 
+                      style={{ 
+                        maxWidth: '200px', 
+                        maxHeight: '200px', 
+                        borderRadius: '8px',
+                        objectFit: 'cover',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }} 
+                    />
+                    <button 
+                      type="button" 
+                      className="btn btn-danger btn-sm"
+                      onClick={handleRemoveImage}
+                      style={{ fontSize: '12px', padding: '5px 15px' }}
+                    >
+                      ✕ Supprimer l'image
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    alignItems: 'center', 
+                    gap: '10px',
+                    padding: '30px',
+                    border: '2px dashed #ddd',
+                    borderRadius: '8px',
+                    backgroundColor: '#f9f9f9',
+                    cursor: 'pointer'
+                  }}>
+                    <FaImage style={{ fontSize: '48px', color: '#ccc' }} />
+                    <label 
+                      htmlFor="image-upload" 
+                      style={{ 
+                        cursor: 'pointer',
+                        color: '#007bff',
+                        fontWeight: '500'
+                      }}
+                    >
+                      📁 Cliquez pour sélectionner une image
+                    </label>
+                    <input
+                      id="image-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      style={{ display: 'none' }}
+                    />
+                    <small style={{ color: '#666', fontSize: '12px' }}>
+                      Formats acceptés: JPG, PNG, GIF (max 5 MB)
+                    </small>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="form-actions">

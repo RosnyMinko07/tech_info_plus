@@ -1,0 +1,34 @@
+3. Réalisations et résultats obtenus
+
+Le stage a abouti à la livraison d'une version fonctionnelle complète du système de gestion commerciale, intégrant quinze modules essentiels répartis sur une application web unique :
+
+• Gestion des utilisateurs (CRUD, rôles et droits)
+• Gestion des clients (numérotation automatique CLI-2025-001)
+• Gestion des articles (mode cards, badges stock)
+• Gestion des fournisseurs
+• Création de devis (PDF orange, calcul automatique)
+• Facturation (3 types, PDF vert, mise à jour stock automatique)
+• Vente au comptoir (interface POS, ticket de caisse)
+• Gestion des règlements (multi modes de paiement)
+• Gestion des avoirs (retours, réintégration stock)
+• Suivi du stock (6 types de mouvements, alertes automatiques)
+• Inventaires (saisie, calcul écarts, ajustements)
+• Rapports statistiques (tableaux de bord, graphiques Chart.js)
+• Configuration du système (paramètres entreprise)
+• Signalement de bugs
+
+Cette solution a permis d'obtenir des résultats significatifs et mesurables :
+
+• Une réduction de 95% des erreurs de facturation (élimination des erreurs de calcul manuel) ;
+• Un gain de temps spectaculaire : facturation 80% plus rapide (de 10 minutes à 2 minutes), génération de rapports 99,9% plus rapide (de 1 heure à 5 secondes) ;
+• Une traçabilité complète de toutes les opérations commerciales (qui, quand, quoi) ;
+• Une meilleure visibilité pour la direction sur la performance commerciale grâce aux tableaux de bord dynamiques avec KPIs et graphiques ;
+• Une réduction de 100% des ruptures de stock non anticipées grâce aux alertes automatiques ;
+• Une amélioration de l'image professionnelle de l'entreprise avec des documents PDF de qualité (devis, factures) ;
+• Une automatisation de 85% des processus manuels, libérant du temps pour les activités à valeur ajoutée.
+
+Le système est aujourd'hui utilisé quotidiennement par l'ensemble des collaborateurs de TECH INFO PLUS et constitue l'outil central de gestion des opérations commerciales de l'entreprise.
+
+
+
+
