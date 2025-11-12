@@ -9,9 +9,9 @@ Allez dans **Settings** → **General** :
 ```
 Root Directory:          frontend
 Framework Preset:        Create React App
-Build Command:           npm run build
+Build Command:           npm install && npm run build
 Output Directory:        build
-Install Command:         npm install
+Node Version:            18.x
 ```
 
 ### 2️⃣ Variables d'Environnement (Environment Variables)
@@ -22,6 +22,8 @@ Allez dans **Settings** → **Environment Variables** et ajoutez :
 |-----|-------|-------------|
 | `REACT_APP_API_URL` | `https://tech-info-plus.onrender.com` | Production |
 | `CI` | `false` | Production |
+| `GENERATE_SOURCEMAP` | `false` | Production |
+| `SKIP_PREFLIGHT_CHECK` | `true` | Production |
 
 ### 3️⃣ Redéployer
 
