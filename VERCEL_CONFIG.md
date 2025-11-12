@@ -9,7 +9,7 @@ Allez dans **Settings** → **General** :
 ```
 Root Directory:          frontend
 Framework Preset:        Create React App
-Build Command:           npm run build:vercel
+Build Command:           npm run build
 Output Directory:        build
 Install Command:         npm install
 ```
@@ -22,7 +22,6 @@ Allez dans **Settings** → **Environment Variables** et ajoutez :
 |-----|-------|-------------|
 | `REACT_APP_API_URL` | `https://tech-info-plus.onrender.com` | Production |
 | `CI` | `false` | Production |
-| `DISABLE_ESLINT_PLUGIN` | `true` | Production |
 
 ### 3️⃣ Redéployer
 
@@ -35,13 +34,14 @@ Après avoir configuré :
 
 ## 🔧 RÉSOLUTION DES ERREURS COMMUNES
 
-### ❌ Erreur: "Build incorrect"
+### ❌ Erreur: "Build incorrect" ou "npm run build sortie avec 1"
 
-**Cause**: Warnings ESLint traités comme erreurs en production
+**Cause**: Warnings ESLint (console.log, variables non utilisées) traités comme erreurs en production
 
 **Solution**: 
-- ✅ Ajoutez `CI=false` dans les variables d'environnement
-- ✅ Utilisez `npm run build:vercel` comme Build Command
+- ✅ Ajoutez `CI=false` dans les variables d'environnement Vercel
+- ✅ Le package.json a été modifié pour désactiver les règles ESLint strictes
+- ✅ Utilisez simplement `npm run build` comme Build Command
 
 ### ❌ Erreur: "Module not found"
 
@@ -63,13 +63,21 @@ Après avoir configuré :
 
 - [ ] Root Directory = `frontend`
 - [ ] Framework Preset = `Create React App`
-- [ ] Build Command = `npm run build:vercel`
+- [ ] Build Command = `npm run build`
 - [ ] Output Directory = `build`
-- [ ] Variable `REACT_APP_API_URL` ajoutée
+- [ ] Variable `REACT_APP_API_URL` = `https://tech-info-plus.onrender.com` ajoutée
 - [ ] Variable `CI` = `false` ajoutée
-- [ ] Variable `DISABLE_ESLINT_PLUGIN` = `true` ajoutée
 - [ ] Code poussé sur GitHub
 - [ ] Redéploiement lancé
+
+## 🔑 POINT IMPORTANT
+
+Le fichier `package.json` a été modifié pour :
+- ✅ Désactiver les warnings `console.log` (règle ESLint "no-console": "off")
+- ✅ Transformer les erreurs de variables non utilisées en warnings ("no-unused-vars": "warn")
+- ✅ Fichier `.env.production` créé avec `CI=false`
+
+Ces changements permettent au build de **toujours réussir**, même avec des console.log dans le code.
 
 ---
 
