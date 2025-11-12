@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, Select, message, Card, Tag, Space, Checkbox } from 'antd';
-import { PlusOutlined, SearchOutlined, ReloadOutlined, EditOutlined, DeleteOutlined, LockOutlined, EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import { Table, Button, Modal, Form, Input, Select, message, Card, Tag, Space, Checkbox, Divider } from 'antd';
+import { PlusOutlined, SearchOutlined, ReloadOutlined, EditOutlined, DeleteOutlined, LockOutlined, EyeOutlined, EyeInvisibleOutlined, CheckSquareOutlined, CloseSquareOutlined } from '@ant-design/icons';
+import { utilisateurService } from '../services/api';
 import dayjs from 'dayjs';
 
 const { Option } = Select;
@@ -17,6 +17,19 @@ const Utilisateurs = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
+  const DROITS_LIST = [
+    { key: 'gestion_utilisateurs', label: 'Gestion des utilisateurs' },
+    { key: 'gestion_factures', label: 'Gestion des factures' },
+    { key: 'gestion_clients', label: 'Gestion des clients' },
+    { key: 'gestion_produits', label: 'Gestion des produits' },
+    { key: 'gestion_stock', label: 'Gestion du stock' },
+    { key: 'gestion_rapports', label: 'Gestion des rapports' },
+    { key: 'gestion_avoirs', label: 'Gestion des avoirs' },
+    { key: 'gestion_reglements', label: 'Gestion des règlements' },
+    { key: 'gestion_comptoir', label: 'Gestion du comptoir' },
+    { key: 'gestion_devis', label: 'Gestion des devis' }
+  ];
+
   useEffect(() => {
     chargerUtilisateurs();
   }, []);
@@ -24,8 +37,8 @@ const Utilisateurs = () => {
   const chargerUtilisateurs = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:8000/api/utilisateurs');
-      setUtilisateurs(response.data);
+      const response = await utilisateurService.getAll();
+      setUtilisateurs(response || []);
     } catch (error) {
       message.error('Erreur lors du chargement des utilisateurs');
       console.error(error);
@@ -75,10 +88,10 @@ const Utilisateurs = () => {
       };
 
       if (selectedUtilisateur) {
-        await axios.put(`http://localhost:8000/api/utilisateurs/${selectedUtilisateur.id_utilisateur}`, data);
+        await utilisateurService.update(selectedUtilisateur.id_utilisateur, data);
         message.success('Utilisateur modifié');
       } else {
-        await axios.post('http://localhost:8000/api/utilisateurs', data);
+        await utilisateurService.create(data);
         message.success('Utilisateur créé');
       }
 
@@ -96,31 +109,65 @@ const Utilisateurs = () => {
     // Parser les droits existants
     let droits = {};
     try {
-      droits = utilisateur.droits ? JSON.parse(utilisateur.droits) : {};
+      if (utilisateur.droits === 'TOUS') {
+        droits = DROITS_LIST.reduce((acc, item) => ({ ...acc, [item.key]: true }), {});
+      } else if (utilisateur.droits) {
+        droits = typeof utilisateur.droits === 'string'
+          ? JSON.parse(utilisateur.droits)
+          : utilisateur.droits;
+      }
     } catch (e) {
       droits = {};
     }
-
-    droitsForm.setFieldsValue({
-      gestion_utilisateurs: droits.gestion_utilisateurs || false,
-      gestion_factures: droits.gestion_factures || false,
-      gestion_clients: droits.gestion_clients || false,
-      gestion_produits: droits.gestion_produits || false,
-      gestion_stock: droits.gestion_stock || false,
-      gestion_rapports: droits.gestion_rapports || false,
-      gestion_avoirs: droits.gestion_avoirs || false,
-      gestion_reglements: droits.gestion_reglements || false,
-      gestion_comptoir: droits.gestion_comptoir || false,
-      gestion_devis: droits.gestion_devis || false
-    });
+    const valeurs = DROITS_LIST.reduce((acc, item) => ({
+      ...acc,
+      [item.key]: droits[item.key] || false
+    }), {});
+    droitsForm.setFieldsValue(valeurs);
 
     setDroitsModalVisible(true);
   };
 
   const enregistrerDroits = async (values) => {
     try {
-      await axios.put(`http://localhost:8000/api/utilisateurs/${selectedUtilisateur.id_utilisateur}/droits`, {
-        droits: values  // Envoyer l'objet directement, pas JSON.stringify
+      await utilisateurService.updateDroits(selectedUtilisateur.id_utilisateur, values);
+      message.success('Droits mis à jour');
+      setDroitsModalVisible(false);
+      chargerUtilisateurs();
+    } catch (error) {
+      message.error('Erreur lors de la mise à jour des droits');
+      console.error('Erreur droits:', error);
+    }
+  };
+
+  const handleSelectAllDroits = () => {
+    const valeurs = DROITS_LIST.reduce((acc, item) => ({ ...acc, [item.key]: true }), {});
+    droitsForm.setFieldsValue(valeurs);
+  };
+
+  const handleUnselectAllDroits = () => {
+    const valeurs = DROITS_LIST.reduce((acc, item) => ({ ...acc, [item.key]: false }), {});
+    droitsForm.setFieldsValue(valeurs);
+  };
+
+  const formaterDroits = (droitsJson) => {
+    try {
+      if (!droitsJson) return '0/0';
+      let droits = {};
+      if (droitsJson === 'TOUS') {
+        droits = DROITS_LIST.reduce((acc, item) => ({ ...acc, [item.key]: true }), {});
+      } else {
+        droits = typeof droitsJson === 'string' ? JSON.parse(droitsJson) : droitsJson;
+      }
+      const accordes = Object.values(droits).filter(v => v).length;
+      const total = DROITS_LIST.length;
+      return `${accordes}/${total}`;
+    } catch {
+      return '0/0';
+    }
+  };
+
+  const columns = [
       });
       message.success('Droits mis à jour');
       setDroitsModalVisible(false);
@@ -139,16 +186,13 @@ const Utilisateurs = () => {
     );
   };
 
-  const formaterDroits = (droitsJson) => {
-    try {
-      const droits = JSON.parse(droitsJson);
-      const accordes = Object.values(droits).filter(v => v).length;
-      const total = Object.keys(droits).length;
-      return `${accordes}/${total}`;
-    } catch {
-      return '0/0';
-    }
-  };
+  const generateDroitsCheckboxes = () => (
+    DROITS_LIST.map((item) => (
+      <Form.Item key={item.key} name={item.key} valuePropName="checked">
+        <Checkbox>{item.label}</Checkbox>
+      </Form.Item>
+    ))
+  );
 
   const columns = [
     {
@@ -351,37 +395,16 @@ const Utilisateurs = () => {
         width={500}
       >
         <Form form={droitsForm} layout="vertical" onFinish={enregistrerDroits}>
-          <Form.Item name="gestion_utilisateurs" valuePropName="checked">
-            <Checkbox>Gestion des utilisateurs</Checkbox>
-          </Form.Item>
-          <Form.Item name="gestion_factures" valuePropName="checked">
-            <Checkbox>Gestion des factures</Checkbox>
-          </Form.Item>
-          <Form.Item name="gestion_clients" valuePropName="checked">
-            <Checkbox>Gestion des clients</Checkbox>
-          </Form.Item>
-          <Form.Item name="gestion_produits" valuePropName="checked">
-            <Checkbox>Gestion des produits</Checkbox>
-          </Form.Item>
-          <Form.Item name="gestion_stock" valuePropName="checked">
-            <Checkbox>Gestion du stock</Checkbox>
-          </Form.Item>
-          <Form.Item name="gestion_rapports" valuePropName="checked">
-            <Checkbox>Gestion des rapports</Checkbox>
-          </Form.Item>
-          <Form.Item name="gestion_avoirs" valuePropName="checked">
-            <Checkbox>Gestion des avoirs</Checkbox>
-          </Form.Item>
-          <Form.Item name="gestion_reglements" valuePropName="checked">
-            <Checkbox>Gestion des règlements</Checkbox>
-          </Form.Item>
-          <Form.Item name="gestion_comptoir" valuePropName="checked">
-            <Checkbox>Gestion du comptoir</Checkbox>
-          </Form.Item>
-          <Form.Item name="gestion_devis" valuePropName="checked">
-            <Checkbox>Gestion des devis</Checkbox>
-          </Form.Item>
-
+          <Space style={{ marginBottom: 12 }}>
+            <Button icon={<CheckSquareOutlined />} onClick={handleSelectAllDroits}>
+              Tout cocher
+            </Button>
+            <Button icon={<CloseSquareOutlined />} onClick={handleUnselectAllDroits}>
+              Tout décocher
+            </Button>
+          </Space>
+          <Divider style={{ margin: '12px 0' }} />
+          {generateDroitsCheckboxes()}
           <Form.Item>
             <Space>
               <Button type="primary" htmlType="submit">
