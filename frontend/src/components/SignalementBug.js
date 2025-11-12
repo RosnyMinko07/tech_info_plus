@@ -174,7 +174,6 @@ const SignalementBug = () => {
           <ul style={{ marginTop: 10, paddingLeft: 20 }}>
             <li>Soyez précis et détaillé dans votre description</li>
             <li>Indiquez les étapes pour reproduire le bug</li>
-            <li>Ajoutez des captures d'écran si possible</li>
             <li>Mentionnez si le bug se reproduit systématiquement</li>
           </ul>
         </div>
