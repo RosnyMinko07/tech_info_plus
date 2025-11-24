@@ -390,25 +390,25 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
     # Mettre à jour la dernière connexion
     derniere_connexion_now = datetime.now()
     try:
-        # Vérifier si la colonne existe en essayant de la mettre à jour directement via SQL
-        try:
-            from sqlalchemy import text
-            db.execute(
-                text("UPDATE utilisateur SET derniere_connexion = :now WHERE id_utilisateur = :id"),
-                {"now": derniere_connexion_now, "id": user.id_utilisateur}
-            )
-            db.commit()
-            # Recharger l'utilisateur depuis la base
-            db.refresh(user)
-            print(f"✅ Dernière connexion mise à jour pour {user.nom_utilisateur}: {user.derniere_connexion}")
-        except Exception as sql_error:
-            # Si erreur SQL (colonne n'existe pas), essayer avec ORM
-            print(f"⚠️ Erreur SQL mise à jour, essai avec ORM: {sql_error}")
-            user.derniere_connexion = derniere_connexion_now
-            db.add(user)
-            db.commit()
-            db.refresh(user)
-            print(f"✅ Dernière connexion mise à jour (ORM) pour {user.nom_utilisateur}: {user.derniere_connexion}")
+        # Mettre à jour directement via SQL (plus fiable)
+        from sqlalchemy import text
+        result = db.execute(
+            text("UPDATE utilisateur SET derniere_connexion = :now WHERE id_utilisateur = :id"),
+            {"now": derniere_connexion_now, "id": user.id_utilisateur}
+        )
+        db.commit()
+        print(f"✅ UPDATE SQL exécuté, lignes affectées: {result.rowcount}")
+        
+        # Recharger l'utilisateur depuis la base (expirer la session pour forcer le rechargement)
+        db.expire(user)
+        db.refresh(user)
+        
+        # Si refresh ne fonctionne pas, recharger manuellement
+        if not user.derniere_connexion or user.derniere_connexion != derniere_connexion_now:
+            print(f"⚠️ Refresh n'a pas fonctionné, rechargement manuel...")
+            user = db.query(Utilisateur).filter(Utilisateur.id_utilisateur == user.id_utilisateur).first()
+        
+        print(f"✅ Dernière connexion mise à jour pour {user.nom_utilisateur}: {user.derniere_connexion}")
     except Exception as e:
         print(f"⚠️ Erreur mise à jour dernière connexion: {e}")
         import traceback
