@@ -1479,7 +1479,6 @@ function Comptoir() {
 
                         {/* 🔍 CHAMP DE RECHERCHE */}
                         <div className="search-historique-container">
-                            <FaSearch className="search-icon" />
                             <input
                                 type="text"
                                 placeholder="🔍 Rechercher par N° facture, client, vendeur ou montant..."
