@@ -390,11 +390,25 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
     # Mettre à jour la dernière connexion
     derniere_connexion_now = datetime.now()
     try:
-        user.derniere_connexion = derniere_connexion_now
-        db.add(user)  # S'assurer que l'objet est suivi
-        db.commit()
-        db.refresh(user)  # Rafraîchir pour avoir la valeur mise à jour
-        print(f"✅ Dernière connexion mise à jour pour {user.nom_utilisateur}: {user.derniere_connexion}")
+        # Vérifier si la colonne existe en essayant de la mettre à jour directement via SQL
+        try:
+            from sqlalchemy import text
+            db.execute(
+                text("UPDATE utilisateur SET derniere_connexion = :now WHERE id_utilisateur = :id"),
+                {"now": derniere_connexion_now, "id": user.id_utilisateur}
+            )
+            db.commit()
+            # Recharger l'utilisateur depuis la base
+            db.refresh(user)
+            print(f"✅ Dernière connexion mise à jour pour {user.nom_utilisateur}: {user.derniere_connexion}")
+        except Exception as sql_error:
+            # Si erreur SQL (colonne n'existe pas), essayer avec ORM
+            print(f"⚠️ Erreur SQL mise à jour, essai avec ORM: {sql_error}")
+            user.derniere_connexion = derniere_connexion_now
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            print(f"✅ Dernière connexion mise à jour (ORM) pour {user.nom_utilisateur}: {user.derniere_connexion}")
     except Exception as e:
         print(f"⚠️ Erreur mise à jour dernière connexion: {e}")
         import traceback
@@ -403,16 +417,30 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
         db.rollback()
         # Mettre quand même la valeur en mémoire pour la réponse
         user.derniere_connexion = derniere_connexion_now
+        print(f"⚠️ Valeur mise en mémoire uniquement: {user.derniere_connexion}")
     
     # Créer le token (simplifié)
     access_token = f"token_{user.id_utilisateur}_{datetime.now().timestamp()}"
     
+    # S'assurer que derniere_connexion est bien défini dans l'objet user
+    if not hasattr(user, 'derniere_connexion') or user.derniere_connexion is None:
+        user.derniere_connexion = derniere_connexion_now
+        print(f"⚠️ derniere_connexion manquant, valeur forcée: {user.derniere_connexion}")
+    
     # Utiliser model_validate au lieu de from_orm (Pydantic v2)
     try:
         utilisateur_response = UtilisateurResponse.model_validate(user)
-    except:
+    except Exception as e:
+        print(f"⚠️ Erreur model_validate, fallback vers from_orm: {e}")
         # Fallback vers from_orm si model_validate ne fonctionne pas
         utilisateur_response = UtilisateurResponse.from_orm(user)
+    
+    # Vérifier que la valeur est bien dans la réponse
+    if utilisateur_response.derniere_connexion:
+        print(f"✅ derniere_connexion dans réponse: {utilisateur_response.derniere_connexion}")
+    else:
+        print(f"⚠️ derniere_connexion manquant dans réponse, valeur forcée")
+        utilisateur_response.derniere_connexion = derniere_connexion_now
     
     return LoginResponse(
         access_token=access_token,
