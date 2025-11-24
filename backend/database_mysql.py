@@ -65,6 +65,7 @@ class Utilisateur(Base):
     droits = Column(Text)
     date_creation = Column(DateTime, default=datetime.now)
     created_at = Column(DateTime, default=datetime.now)
+    derniere_connexion = Column(DateTime, nullable=True)  # Dernière heure de connexion
 
 
 class Client(Base):
@@ -124,6 +125,8 @@ class Article(Base):
     actif = Column(Boolean, default=True)  # Pour activer/désactiver l'article
     id_fournisseur = Column(Integer, ForeignKey('fournisseur.id_fournisseur'))
     created_at = Column(DateTime, default=datetime.now)
+    supprime_par = Column(Integer, ForeignKey('utilisateur.id_utilisateur'), nullable=True)  # Qui a supprimé
+    date_suppression = Column(DateTime, nullable=True)  # Quand a été supprimé
     
     # Relations
     fournisseur = relationship("Fournisseur", back_populates="articles")

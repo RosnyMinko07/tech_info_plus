@@ -331,6 +331,22 @@ function Articles() {
                       <label>Date création:</label>
                       <span>{new Date(articleDetails.created_at).toLocaleDateString('fr-FR')}</span>
                     </div>
+                    {articleDetails.actif === false && articleDetails.supprime_par_nom && (
+                      <>
+                        <div className="detail-item">
+                          <label>Supprimé par:</label>
+                          <span style={{ color: '#EF4444', fontWeight: 'bold' }}>
+                            {articleDetails.supprime_par_nom}
+                          </span>
+                        </div>
+                        <div className="detail-item">
+                          <label>Date suppression:</label>
+                          <span style={{ color: '#EF4444' }}>
+                            {articleDetails.date_suppression ? new Date(articleDetails.date_suppression).toLocaleDateString('fr-FR') : 'N/A'}
+                          </span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 

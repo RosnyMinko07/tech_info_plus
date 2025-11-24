@@ -120,6 +120,8 @@ class ArticleResponse(BaseModel):
     image_path: Optional[str] = None
     id_fournisseur: Optional[int] = None
     created_at: Optional[datetime] = None
+    supprime_par: Optional[int] = None  # ID de l'utilisateur qui a supprimé
+    date_suppression: Optional[datetime] = None  # Date de suppression
 
     class Config:
         from_attributes = True
@@ -241,6 +243,7 @@ class UtilisateurResponse(BaseModel):
     droits: Optional[str] = None  # Champ JSON des droits
     date_creation: Optional[datetime] = None
     created_at: Optional[datetime] = None
+    derniere_connexion: Optional[datetime] = None  # Dernière heure de connexion
 
     class Config:
         from_attributes = True
@@ -383,6 +386,10 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Mot de passe incorrect"
         )
+    
+    # Mettre à jour la dernière connexion
+    user.derniere_connexion = datetime.now()
+    db.commit()
     
     # Créer le token (simplifié)
     access_token = f"token_{user.id_utilisateur}_{datetime.now().timestamp()}"
@@ -580,6 +587,13 @@ async def get_article(article_id: int, db: Session = Depends(get_db)):
         if not article:
             raise HTTPException(status_code=404, detail="Article non trouvé")
         
+        # Récupérer l'utilisateur qui a supprimé l'article si applicable
+        utilisateur_suppression = None
+        if article.supprime_par:
+            utilisateur_suppression = db.query(Utilisateur).filter(
+                Utilisateur.id_utilisateur == article.supprime_par
+            ).first()
+        
         # Ajouter des statistiques de l'article
         # Nombre de ventes (lignes de factures)
         ventes_count = db.query(LigneFacture).filter(LigneFacture.id_article == article_id).count()
@@ -612,6 +626,10 @@ async def get_article(article_id: int, db: Session = Depends(get_db)):
             "image_url": article.image_path,
             "id_fournisseur": article.id_fournisseur,
             "created_at": article.created_at,
+            "actif": article.actif,
+            "supprime_par": article.supprime_par,
+            "supprime_par_nom": utilisateur_suppression.nom_utilisateur if utilisateur_suppression else None,
+            "date_suppression": article.date_suppression.isoformat() if article.date_suppression else None,
             "statistiques": {
                 "nb_ventes": ventes_count,
                 "quantite_vendue": int(quantite_vendue),
@@ -674,13 +692,17 @@ async def update_article(article_id: int, data: dict, db: Session = Depends(get_
         raise HTTPException(status_code=400, detail=f"Erreur lors de la mise à jour: {str(e)}")
 
 @app.delete("/api/articles/{article_id}")
-async def delete_article(article_id: int, db: Session = Depends(get_db)):
+async def delete_article(article_id: int, request: Request, db: Session = Depends(get_db)):
     """Supprimer un article (désactiver)"""
     db_article = db.query(Article).filter(Article.id_article == article_id).first()
     if not db_article:
         raise HTTPException(status_code=404, detail="Article non trouvé")
     
+    # Enregistrer qui a supprimé l'article
+    id_utilisateur = get_current_user_id(request)
     db_article.actif = False
+    db_article.supprime_par = id_utilisateur
+    db_article.date_suppression = datetime.now()
     db.commit()
     return {"message": "Article désactivé avec succès"}
 

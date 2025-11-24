@@ -33,7 +33,7 @@ function Utilisateurs() {
             setLoading(true);
             const data = await utilisateurService.getAll();
             
-            // Si pas admin, montrer seulement son propre compte
+            
             if (!isAdmin) {
                 const monCompte = data.filter(u => u.id_utilisateur === currentUser.id_utilisateur);
                 setUtilisateurs(monCompte || []);
@@ -181,6 +181,7 @@ function Utilisateurs() {
                                 <th>RÔLE</th>
                                 <th>STATUT</th>
                                 <th>DATE CRÉATION</th>
+                                {isAdmin && <th>DERNIÈRE CONNEXION</th>}
                                 {isAdmin && <th>DROITS</th>}
                                 <th>ACTIONS</th>
                             </tr>
@@ -188,7 +189,7 @@ function Utilisateurs() {
                         <tbody>
                             {filteredUtilisateurs.length === 0 ? (
                                 <tr>
-                                    <td colSpan={isAdmin ? "8" : "7"} style={{ textAlign: 'center', padding: '40px' }}>
+                                    <td colSpan={isAdmin ? "9" : "7"} style={{ textAlign: 'center', padding: '40px' }}>
                                         Aucun utilisateur trouvé
                                     </td>
                                 </tr>
@@ -226,6 +227,22 @@ function Utilisateurs() {
                                             </span>
                                         </td>
                                         <td>{formatDate(utilisateur.created_at)}</td>
+                                        {isAdmin && (
+                                            <td>
+                                                {utilisateur.derniere_connexion ? (
+                                                    <span style={{ 
+                                                        color: '#10B981', 
+                                                        fontSize: '13px'
+                                                    }}>
+                                                        {formatDate(utilisateur.derniere_connexion)}
+                                                    </span>
+                                                ) : (
+                                                    <span style={{ color: '#888', fontSize: '13px' }}>
+                                                        Jamais connecté
+                                                    </span>
+                                                )}
+                                            </td>
+                                        )}
                                         {isAdmin && (
                                             <td>
                                                 <span style={{ 
