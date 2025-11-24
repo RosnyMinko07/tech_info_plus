@@ -388,23 +388,36 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
         )
     
     # Mettre à jour la dernière connexion
+    derniere_connexion_now = datetime.now()
     try:
-        user.derniere_connexion = datetime.now()
+        user.derniere_connexion = derniere_connexion_now
+        db.add(user)  # S'assurer que l'objet est suivi
         db.commit()
         db.refresh(user)  # Rafraîchir pour avoir la valeur mise à jour
         print(f"✅ Dernière connexion mise à jour pour {user.nom_utilisateur}: {user.derniere_connexion}")
     except Exception as e:
         print(f"⚠️ Erreur mise à jour dernière connexion: {e}")
+        import traceback
+        traceback.print_exc()
         # Ne pas bloquer la connexion si la colonne n'existe pas encore
         db.rollback()
+        # Mettre quand même la valeur en mémoire pour la réponse
+        user.derniere_connexion = derniere_connexion_now
     
     # Créer le token (simplifié)
     access_token = f"token_{user.id_utilisateur}_{datetime.now().timestamp()}"
     
+    # Utiliser model_validate au lieu de from_orm (Pydantic v2)
+    try:
+        utilisateur_response = UtilisateurResponse.model_validate(user)
+    except:
+        # Fallback vers from_orm si model_validate ne fonctionne pas
+        utilisateur_response = UtilisateurResponse.from_orm(user)
+    
     return LoginResponse(
         access_token=access_token,
         token_type="bearer",
-        utilisateur=UtilisateurResponse.from_orm(user)
+        utilisateur=utilisateur_response
     )
 
 # ==================== CLIENTS ====================
