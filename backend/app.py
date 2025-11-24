@@ -388,8 +388,15 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
         )
     
     # Mettre à jour la dernière connexion
-    user.derniere_connexion = datetime.now()
-    db.commit()
+    try:
+        user.derniere_connexion = datetime.now()
+        db.commit()
+        db.refresh(user)  # Rafraîchir pour avoir la valeur mise à jour
+        print(f"✅ Dernière connexion mise à jour pour {user.nom_utilisateur}: {user.derniere_connexion}")
+    except Exception as e:
+        print(f"⚠️ Erreur mise à jour dernière connexion: {e}")
+        # Ne pas bloquer la connexion si la colonne n'existe pas encore
+        db.rollback()
     
     # Créer le token (simplifié)
     access_token = f"token_{user.id_utilisateur}_{datetime.now().timestamp()}"
