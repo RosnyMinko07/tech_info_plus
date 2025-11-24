@@ -14,9 +14,16 @@ function ReglementModal({ facture, onClose, onSuccess }) {
   const montant_total = parseFloat(facture.montant_ttc || 0);
   const montant_avance = parseFloat(facture.montant_avance || 0);
   const montant_reste = parseFloat(facture.montant_reste || 0);
+  const facturePayee = montant_reste <= 0 || facture.statut === 'Payée';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Vérifier si la facture est déjà entièrement payée
+    if (facturePayee) {
+      toast.error('Cette facture est déjà entièrement payée. Impossible d\'ajouter un règlement.');
+      return;
+    }
 
     if (!formData.montant || formData.montant <= 0) {
       toast.error('Le montant doit être positif');
@@ -95,9 +102,10 @@ function ReglementModal({ facture, onClose, onSuccess }) {
                 max={montant_reste}
                 step="any"
                 required
+                disabled={facturePayee}
               />
-              <small style={{ color: '#888', fontSize: '11px' }}>
-                Maximum: {formatMontant(montant_reste)}
+              <small style={{ color: facturePayee ? '#EF4444' : '#888', fontSize: '11px', fontWeight: facturePayee ? 'bold' : 'normal' }}>
+                {facturePayee ? '⚠️ Facture déjà entièrement payée' : `Maximum: ${formatMontant(montant_reste)}`}
               </small>
             </div>
 
@@ -129,7 +137,7 @@ function ReglementModal({ facture, onClose, onSuccess }) {
           </div>
 
           <div className="form-actions">
-            <button type="submit" className="btn btn-success">
+            <button type="submit" className="btn btn-success" disabled={facturePayee}>
               <FaSave /> Enregistrer le règlement
             </button>
             <button type="button" className="btn btn-secondary" onClick={onClose}>

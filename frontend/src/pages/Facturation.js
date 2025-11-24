@@ -172,6 +172,14 @@ function Facturation() {
   };
 
   const handleReglement = (facture) => {
+    const montant_reste = parseFloat(facture.montant_reste || 0);
+    const facturePayee = montant_reste <= 0 || facture.statut === 'Payée';
+    
+    if (facturePayee) {
+      toast.warning('Cette facture est déjà entièrement payée. Impossible d\'ajouter un règlement.');
+      return;
+    }
+    
     setFactureForReglement(facture);
     setShowReglementModal(true);
   };

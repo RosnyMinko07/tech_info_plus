@@ -69,10 +69,11 @@ function Reglements() {
     const loadFactures = async () => {
         try {
             const data = await factureService.getAll();
-            // Filtrer les factures partiellement payées ou non payées
-            const facturesNonPayees = (data || []).filter(f => 
-                f.montant_reste > 0 || f.statut !== 'Payée'
-            );
+            // Filtrer uniquement les factures qui ne sont PAS entièrement payées
+            const facturesNonPayees = (data || []).filter(f => {
+                const montant_reste = parseFloat(f.montant_reste || 0);
+                return montant_reste > 0 && f.statut !== 'Payée' && f.statut !== 'Annulée';
+            });
             setFactures(facturesNonPayees);
         } catch (error) {
             console.error('Erreur chargement factures:', error);
@@ -155,6 +156,23 @@ function Reglements() {
             return;
         }
         
+        // Vérifier si la facture sélectionnée est déjà entièrement payée
+        const factureSelectionnee = factures.find(f => f.id_facture === parseInt(formData.id_facture));
+        if (factureSelectionnee) {
+            const montant_reste = parseFloat(factureSelectionnee.montant_reste || 0);
+            if (montant_reste <= 0 || factureSelectionnee.statut === 'Payée') {
+                toast.error('Cette facture est déjà entièrement payée. Impossible d\'ajouter un règlement.');
+                return;
+            }
+            
+            // Vérifier que le montant ne dépasse pas le reste à payer
+            const montant_reglement = parseFloat(formData.montant);
+            if (montant_reglement > montant_reste) {
+                toast.error(`Le montant du règlement (${formatMontant(montant_reglement)}) dépasse le reste à payer (${formatMontant(montant_reste)})`);
+                return;
+            }
+        }
+        
         try {
             await reglementService.create({
                 ...formData,
@@ -167,7 +185,8 @@ function Reglements() {
             loadData();
         } catch (error) {
             console.error('Erreur enregistrement règlement:', error);
-            toast.error('Erreur lors de l\'enregistrement du règlement');
+            const errorMessage = error.response?.data?.detail || error.message || 'Erreur lors de l\'enregistrement du règlement';
+            toast.error(errorMessage);
         }
     };
 

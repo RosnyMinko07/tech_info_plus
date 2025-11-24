@@ -2243,8 +2243,26 @@ async def create_reglement(reglement: dict, db: Session = Depends(get_db)):
         if not facture:
             raise HTTPException(status_code=404, detail="Facture non trouvée")
         
-        # Vérifier si c'est le PREMIER paiement (ligne 657-663)
+        # Vérifier si la facture est déjà entièrement payée
+        montant_ttc = facture.montant_ttc or facture.total_ttc or 0
         montant_avance_actuel = facture.montant_avance or 0
+        montant_reste = montant_ttc - montant_avance_actuel
+        
+        if montant_reste <= 0:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Impossible d'ajouter un règlement : la facture {facture.numero_facture} est déjà entièrement payée"
+            )
+        
+        # Vérifier que le montant du règlement ne dépasse pas le montant restant
+        montant_reglement = reglement.get('montant', 0)
+        if montant_reglement > montant_reste:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Le montant du règlement ({montant_reglement} FCFA) dépasse le montant restant ({montant_reste} FCFA)"
+            )
+        
+        # Vérifier si c'est le PREMIER paiement (ligne 657-663)
         premier_paiement = (montant_avance_actuel == 0)
         
         print(f"🔍 Règlement - Premier paiement: {premier_paiement}, montant_avance actuel: {montant_avance_actuel}")
