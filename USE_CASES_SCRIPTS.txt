@@ -1,0 +1,310 @@
+# Scripts de diagrammes de cas d'utilisation (PlantUML)
+# Application Tech Info Plus - état fonctionnel Novembre 2025
+
+## 1. Vue globale - Authentification & rôles
+@startuml
+left to right direction
+skinparam actorStyle awesome
+actor "Visiteur" as Visitor
+actor "Utilisateur" as User
+actor "Administrateur" as Admin
+actor "Comptable" as Accountant
+actor "Vendeur" as Seller
+actor "Caissier" as Cashier
+
+rectangle "Plateforme Tech Info Plus" {
+  usecase UC_Login as "Se connecter"
+  usecase UC_Logout as "Se déconnecter"
+  usecase UC_ViewDashboard as "Consulter dashboard"
+  usecase UC_UpdateProfile as "Mettre à jour profil"
+}
+
+Visitor --> UC_Login
+User --> UC_Logout
+User --> UC_ViewDashboard
+User --> UC_UpdateProfile
+Admin --> UC_ViewDashboard
+Admin --> UC_UpdateProfile
+Accountant --> UC_ViewDashboard
+Seller --> UC_ViewDashboard
+Cashier --> UC_ViewDashboard
+
+UC_ViewDashboard .> UC_Login : <<include>>
+@enduml
+
+## 2. Gestion des utilisateurs & droits
+@startuml
+left to right direction
+skinparam actorStyle awesome
+actor "Administrateur" as Admin
+actor "Comptable" as Accountant
+
+rectangle "Gestion utilisateurs" {
+  usecase UC_CreateUser as "Créer un utilisateur"
+  usecase UC_EditUser as "Modifier un utilisateur"
+  usecase UC_DeactivateUser as "Activer / désactiver"
+  usecase UC_AssignRole as "Assigner un rôle (Admin/Comptable/Vendeur/Caissier)"
+  usecase UC_SetPermissions as "Configurer droits granulaires"
+}
+
+Admin --> UC_CreateUser
+Admin --> UC_EditUser
+Admin --> UC_DeactivateUser
+Admin --> UC_AssignRole
+Admin --> UC_SetPermissions
+
+Accountant --> UC_EditUser : <<limité équipe>>
+Accountant --> UC_SetPermissions : <<selon droits>>
+
+UC_CreateUser .> UC_AssignRole : <<include>>
+UC_CreateUser .> UC_SetPermissions : <<include>>
+UC_AssignRole .> UC_SetPermissions : <<extend>>
+@enduml
+
+## 3. Référentiels (Clients, Fournisseurs, Articles)
+@startuml
+left to right direction
+skinparam actorStyle awesome
+actor "Administrateur" as Admin
+actor "Comptable" as Accountant
+actor "Vendeur" as Seller
+
+package "Clients & Fournisseurs" {
+  usecase UC_CreateClient as "Créer / modifier clients"
+  usecase UC_CreateSupplier as "Créer / modifier fournisseurs"
+  usecase UC_ImportContacts as "Importer contacts"
+}
+
+package "Catalogue Articles" {
+  usecase UC_CreateArticle as "Créer / modifier article"
+  usecase UC_UploadImage as "Uploader image produit"
+  usecase UC_SetStockAlert as "Configurer seuil alerte"
+  usecase UC_ArchiveArticle as "Archiver / réactiver"
+}
+
+Admin --> UC_CreateClient
+Admin --> UC_CreateSupplier
+Admin --> UC_CreateArticle
+Admin --> UC_UploadImage
+Admin --> UC_SetStockAlert
+Admin --> UC_ArchiveArticle
+
+Accountant --> UC_CreateClient
+Accountant --> UC_CreateSupplier
+Accountant --> UC_CreateArticle
+Accountant --> UC_UploadImage
+Accountant --> UC_SetStockAlert
+
+Seller --> UC_CreateClient
+Seller --> UC_CreateArticle : <<limité>>
+Seller --> UC_UploadImage
+
+UC_CreateArticle .> UC_UploadImage : <<include>>
+UC_CreateArticle .> UC_SetStockAlert : <<extend>>
+@enduml
+
+## 4. Devis & Facturation
+@startuml
+left to right direction
+skinparam actorStyle awesome
+actor "Administrateur" as Admin
+actor "Comptable" as Accountant
+actor "Vendeur" as Seller
+
+rectangle "Cycle vente" {
+  usecase UC_CreateQuote as "Créer devis"
+  usecase UC_ConvertQuote as "Valider devis -> facture"
+  usecase UC_EditInvoice as "Modifier facture"
+  usecase UC_RegisterPayment as "Enregistrer paiement"
+  usecase UC_GeneratePDF as "Générer PDF"
+  usecase UC_SendEmail as "Envoyer par email"
+  usecase UC_Report as "Rapports de vente"
+}
+
+Admin --> UC_CreateQuote
+Admin --> UC_ConvertQuote
+Admin --> UC_EditInvoice
+Admin --> UC_RegisterPayment
+Admin --> UC_GeneratePDF
+Admin --> UC_SendEmail
+Admin --> UC_Report
+
+Accountant --> UC_CreateQuote
+Accountant --> UC_ConvertQuote
+Accountant --> UC_EditInvoice
+Accountant --> UC_RegisterPayment
+Accountant --> UC_GeneratePDF
+Accountant --> UC_Report
+
+Seller --> UC_CreateQuote
+Seller --> UC_ConvertQuote
+Seller --> UC_GeneratePDF
+
+UC_CreateQuote .> UC_GeneratePDF : <<extend>>
+UC_ConvertQuote .> UC_EditInvoice : <<include>>
+UC_RegisterPayment .> UC_Report : <<extend>>
+@enduml
+
+## 5. Module Comptoir (Point de vente)
+@startuml
+left to right direction
+skinparam actorStyle awesome
+actor "Vendeur" as Seller
+actor "Caissier" as Cashier
+actor "Comptable" as Accountant
+
+rectangle "Comptoir" {
+  usecase UC_OpenPOS as "Ouvrir module"
+  usecase UC_SearchProduct as "Chercher article"
+  usecase UC_AddCart as "Ajouter au panier"
+  usecase UC_ValidateSale as "Valider vente"
+  usecase UC_PrintTicket as "Imprimer ticket"
+  usecase UC_ProcessReturn as "Retour produit"
+  usecase UC_ViewDailySales as "Ventes du jour"
+  usecase UC_ViewHistory as "Historique ventes"
+}
+
+Seller --> UC_OpenPOS
+Seller --> UC_SearchProduct
+Seller --> UC_AddCart
+Seller --> UC_ValidateSale
+Seller --> UC_PrintTicket
+Seller --> UC_ProcessReturn
+Seller --> UC_ViewDailySales
+Seller --> UC_ViewHistory
+
+Cashier --> UC_OpenPOS
+Cashier --> UC_AddCart
+Cashier --> UC_ValidateSale
+Cashier --> UC_PrintTicket
+Cashier --> UC_ViewDailySales
+
+Accountant --> UC_ViewDailySales
+Accountant --> UC_ViewHistory
+
+UC_ValidateSale .> UC_PrintTicket : <<include>>
+UC_ProcessReturn .> UC_ViewHistory : <<extend>>
+@enduml
+
+## 6. Stock & Inventaire
+@startuml
+left to right direction
+skinparam actorStyle awesome
+actor "Administrateur" as Admin
+actor "Comptable" as Accountant
+actor "Vendeur" as Seller
+actor "Caissier" as Cashier
+
+rectangle "Gestion stock" {
+  usecase UC_ViewStock as "Consulter stock"
+  usecase UC_RecordEntry as "Entrée stock"
+  usecase UC_RecordExit as "Sortie stock"
+  usecase UC_AdjustStock as "Ajustement inventaire"
+  usecase UC_TrackAlerts as "Suivi alertes"
+}
+
+Admin --> UC_ViewStock
+Admin --> UC_RecordEntry
+Admin --> UC_RecordExit
+Admin --> UC_AdjustStock
+Admin --> UC_TrackAlerts
+
+Accountant --> UC_ViewStock
+Accountant --> UC_RecordEntry
+Accountant --> UC_RecordExit
+Accountant --> UC_AdjustStock
+Accountant --> UC_TrackAlerts
+
+Seller --> UC_ViewStock
+Seller --> UC_RecordExit : <<via ventes>>
+
+Cashier --> UC_RecordExit : <<via comptoir>>
+
+UC_RecordExit .> UC_TrackAlerts : <<extend>>
+UC_AdjustStock .> UC_ViewStock : <<include>>
+@enduml
+
+## 7. Rapports & KPI
+@startuml
+left to right direction
+skinparam actorStyle awesome
+actor "Administrateur" as Admin
+actor "Comptable" as Accountant
+actor "Vendeur" as Seller
+
+rectangle "Reporting" {
+  usecase UC_ViewKPIs as "Consulter KPI"
+  usecase UC_ExportPDF as "Exporter PDF"
+  usecase UC_DownloadCSV as "Exporter CSV"
+  usecase UC_ViewActivity as "Activité récente"
+}
+
+Admin --> UC_ViewKPIs
+Admin --> UC_ExportPDF
+Admin --> UC_DownloadCSV
+Admin --> UC_ViewActivity
+
+Accountant --> UC_ViewKPIs
+Accountant --> UC_ExportPDF
+Accountant --> UC_DownloadCSV
+
+Seller --> UC_ViewKPIs
+Seller --> UC_ViewActivity
+
+UC_ViewKPIs .> UC_ViewActivity : <<include>>
+UC_ExportPDF .> UC_ViewKPIs : <<extend>>
+@enduml
+
+## 8. Support & qualité
+@startuml
+left to right direction
+skinparam actorStyle awesome
+actor "Utilisateur" as User
+actor "Administrateur" as Admin
+
+rectangle "Support" {
+  usecase UC_ReportBug as "Signaler un bug"
+  usecase UC_AttachFile as "Joindre fichier (option)"
+  usecase UC_TrackBug as "Suivre statut"
+  usecase UC_CloseBug as "Clore bug"
+}
+
+User --> UC_ReportBug
+User --> UC_AttachFile
+User --> UC_TrackBug
+
+Admin --> UC_TrackBug
+Admin --> UC_CloseBug
+
+UC_ReportBug .> UC_AttachFile : <<extend>>
+UC_CloseBug .> UC_TrackBug : <<include>>
+@enduml
+
+## 9. Administration technique
+@startuml
+left to right direction
+skinparam actorStyle awesome
+actor "Administrateur" as Admin
+actor "Technicien" as Tech
+
+rectangle "Administration système" {
+  usecase UC_ManageConfig as "Configurer paramètres"
+  usecase UC_ResetPassword as "Réinitialiser mot de passe"
+  usecase UC_ViewLogs as "Consulter logs"
+  usecase UC_Deploy as "Déployer (Render/Vercel)"
+  usecase UC_Backup as "Sauvegarder / restaurer"
+}
+
+Admin --> UC_ManageConfig
+Admin --> UC_ResetPassword
+Admin --> UC_ViewLogs
+Admin --> UC_Deploy
+Admin --> UC_Backup
+
+Tech --> UC_ViewLogs
+Tech --> UC_Deploy
+Tech --> UC_Backup
+
+UC_Deploy .> UC_ViewLogs : <<extend>>
+UC_Backup .> UC_ManageConfig : <<include>>
+@enduml

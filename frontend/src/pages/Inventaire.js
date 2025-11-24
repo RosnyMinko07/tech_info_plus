@@ -20,12 +20,13 @@ function Inventaire() {
       setLoading(true);
       console.log('📥 Chargement des articles...');
       
-      // Pour l'inventaire, on veut TOUS les articles, même inactifs
-      const articlesData = await articleService.getAll({ inclure_inactifs: true });
+      // Pour l'inventaire, on veut uniquement les articles ACTIFS (pas les supprimés)
+      // Par défaut, getAll() exclut les articles inactifs (inclure_inactifs: false)
+      const articlesData = await articleService.getAll();
       console.log('📦 Articles reçus:', articlesData);
       
       const tousArticles = articlesData || [];
-      console.log(`📊 Total articles: ${tousArticles.length}`);
+      console.log(`📊 Total articles (actifs uniquement): ${tousArticles.length}`);
       
       // Afficher les types d'articles
       const types = {};
@@ -35,8 +36,9 @@ function Inventaire() {
       });
       console.log('📋 Types d\'articles:', types);
       
+      // Filtrer uniquement les produits (déjà actifs car getAll() les filtre)
       const produits = tousArticles.filter(a => a.type_article === 'PRODUIT');
-      console.log(`✅ Produits filtrés: ${produits.length}`, produits);
+      console.log(`✅ Produits filtrés (actifs uniquement): ${produits.length}`, produits);
       
       setArticles(produits);
       
