@@ -112,7 +112,6 @@ function Configuration() {
             {/* En-tête */}
             <div className="configuration-header">
                 <h1 className="configuration-title">⚙️ Configuration de l'Entreprise</h1>
-                <p className="configuration-subtitle">Gérez les informations de votre entreprise et le logo pour les PDFs</p>
             </div>
 
             {/* Formulaire */}
