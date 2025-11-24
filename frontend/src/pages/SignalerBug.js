@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import { FaBug, FaPaperPlane, FaEraser } from 'react-icons/fa';
 import api from '../services/api';
@@ -13,21 +13,6 @@ function SignalerBug() {
     priorite: 'MOYENNE'
   });
   const [loading, setLoading] = useState(false);
-  const [entreprise, setEntreprise] = useState(null);
-
-  // Charger les infos de l'entreprise au montage
-  useEffect(() => {
-    loadEntrepriseConfig();
-  }, []);
-
-  const loadEntrepriseConfig = async () => {
-    try {
-      const response = await api.get('/api/entreprise/config');
-      setEntreprise(response.data);
-    } catch (error) {
-      console.error('Erreur chargement config:', error);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -147,11 +132,7 @@ function SignalerBug() {
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder={`Décrivez le problème en détail :
-• Que faisiez-vous quand le problème est survenu ?
-• Quel message d'erreur avez-vous vu ?
-• Le problème se reproduit-il ?
-• Y a-t-il des étapes pour le reproduire ?`}
+              placeholder=""
               className="form-textarea"
               rows="10"
             />
@@ -160,20 +141,6 @@ function SignalerBug() {
               {formData.description.length < 20 && formData.description.length > 0 && (
                 <span className="count-warning"> - Au moins 20 caractères requis</span>
               )}
-            </div>
-          </div>
-
-          {/* Conseils */}
-          <div className="info-box">
-            <div className="info-icon">💡</div>
-            <div className="info-content">
-              <strong>Conseils pour un signalement efficace :</strong>
-              <ul>
-                <li>Soyez précis dans la description</li>
-                <li>Indiquez les étapes pour reproduire le problème</li>
-                <li>Mentionnez le navigateur/système utilisé</li>
-                <li>Joignez des captures d'écran si possible</li>
-              </ul>
             </div>
           </div>
 
@@ -202,48 +169,6 @@ function SignalerBug() {
             </button>
           </div>
         </form>
-      </div>
-
-      {/* Section d'aide */}
-      <div className="help-section">
-        <h3>❓ Besoin d'aide ?</h3>
-        <p>
-          Si vous avez des questions ou besoin d'assistance immédiate, 
-          n'hésitez pas à contacter l'équipe technique.
-        </p>
-        {entreprise ? (
-          <div className="help-contact">
-            {entreprise.email && (
-              <div className="help-item">
-                <strong>📧 Email :</strong> {entreprise.email}
-              </div>
-            )}
-            {entreprise.telephone && (
-              <div className="help-item">
-                <strong>📞 Téléphone :</strong> {entreprise.telephone}
-              </div>
-            )}
-            {entreprise.nom && (
-              <div className="help-item">
-                <strong>🏢 Entreprise :</strong> {entreprise.nom}
-              </div>
-            )}
-            {entreprise.adresse && (
-              <div className="help-item">
-                <strong>📍 Adresse :</strong> {entreprise.adresse}
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="help-contact">
-            <div className="help-item">
-              <strong>📧 Email :</strong> support@techinfo.cm
-            </div>
-            <div className="help-item">
-              <strong>📞 Téléphone :</strong> +237 6XX XX XX XX
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

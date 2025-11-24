@@ -125,11 +125,7 @@ const SignalementBug = () => {
           >
             <TextArea
               rows={8}
-              placeholder={`Décrivez le bug en détail :
-- Que faisiez-vous lorsque le bug est apparu ?
-- Quel était le résultat attendu ?
-- Quel est le comportement actuel ?
-- Comment reproduire le bug ?`}
+              placeholder=""
             />
           </Form.Item>
 
@@ -161,22 +157,6 @@ const SignalementBug = () => {
             </Button>
           </Form.Item>
         </Form>
-
-        <div style={{ 
-          marginTop: 30, 
-          padding: 15, 
-          background: '#f0f2f5', 
-          borderRadius: 8,
-          fontSize: 13,
-          color: '#595959'
-        }}>
-          <strong>💡 Conseils pour un bon signalement :</strong>
-          <ul style={{ marginTop: 10, paddingLeft: 20 }}>
-            <li>Soyez précis et détaillé dans votre description</li>
-            <li>Indiquez les étapes pour reproduire le bug</li>
-            <li>Mentionnez si le bug se reproduit systématiquement</li>
-          </ul>
-        </div>
       </Card>
     </div>
   );
