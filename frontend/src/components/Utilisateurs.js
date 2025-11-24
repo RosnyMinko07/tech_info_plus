@@ -237,6 +237,16 @@ const Utilisateurs = () => {
       render: (date) => date ? dayjs(date).format('DD/MM/YYYY') : 'N/A'
     },
     {
+      title: 'Dernière Connexion',
+      dataIndex: 'derniere_connexion',
+      key: 'derniere_connexion',
+      width: 180,
+      render: (date) => {
+        if (!date) return <Tag color="default">Jamais connecté</Tag>;
+        return <Tag color="green">{dayjs(date).format('DD/MM/YYYY HH:mm')}</Tag>;
+      }
+    },
+    {
       title: 'Droits',
       dataIndex: 'droits',
       key: 'droits',
