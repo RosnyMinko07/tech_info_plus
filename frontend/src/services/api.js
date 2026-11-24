@@ -67,6 +67,7 @@ api.interceptors.response.use(
 
 export const authService = {
   login: (credentials) => api.post('/api/auth/login', credentials),
+  inscription: (data) => api.post('/api/auth/inscription', data),
   me: () => api.get('/api/auth/me'),
   logout: () => {
     localStorage.removeItem('token');

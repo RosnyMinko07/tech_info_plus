@@ -8,6 +8,7 @@ import { ThemeProvider } from './context/ThemeContext';
 
 // Pages
 import Login from './pages/Login';
+import Inscription from './pages/Inscription';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Clients from './pages/Clients';
@@ -109,6 +110,7 @@ function App() {
             
             {/* Route de connexion */}
             <Route path="/login" element={<Login />} />
+            <Route path="/inscription" element={<Inscription />} />
             
             {/* Routes protégées avec Layout */}
             <Route

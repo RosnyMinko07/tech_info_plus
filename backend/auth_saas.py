@@ -30,6 +30,18 @@ if not SECRET_KEY:
     print("⚠️  SECRET_KEY absente : clé de développement utilisée (NE PAS utiliser en production)")
 
 STATUTS_ENTREPRISE_AUTORISES = {"ACTIF", "ESSAI"}
+DUREE_ESSAI_JOURS = int(os.getenv("DUREE_ESSAI_JOURS", "14"))
+
+
+def verifier_acces_entreprise(entreprise) -> None:
+    """Lève une erreur 403 si l'entreprise est suspendue ou si son essai est terminé."""
+    statut = (entreprise.statut or "ACTIF").upper()
+    if statut not in STATUTS_ENTREPRISE_AUTORISES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Le compte de votre entreprise est suspendu. Contactez le support.")
+    if statut == "ESSAI" and entreprise.date_fin_essai and entreprise.date_fin_essai < datetime.now():
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Votre période d'essai est terminée. Contactez-nous pour activer votre abonnement.")
 
 _non_authentifie = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -86,9 +98,7 @@ def get_db(request: Request):
         entreprise = db.query(Entreprise).first()
         if not entreprise:
             raise _non_authentifie
-        if (entreprise.statut or "ACTIF").upper() not in STATUTS_ENTREPRISE_AUTORISES:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                                detail="Le compte de votre entreprise est suspendu. Contactez le support.")
+        verifier_acces_entreprise(entreprise)
 
         db.info["user"] = user
         request.state.id_utilisateur = user.id_utilisateur

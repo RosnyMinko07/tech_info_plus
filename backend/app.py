@@ -26,7 +26,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Importer la configuration MySQL
 from database_mysql import test_connection, create_tables
 # Authentification SaaS : get_db = session authentifiée ET filtrée par entreprise
-from auth_saas import get_db, get_db_public, get_current_user_id, creer_token, require_admin
+from auth_saas import (get_db, get_db_public, get_current_user_id, creer_token, require_admin,
+                       verifier_acces_entreprise, DUREE_ESSAI_JOURS)
 from database_mysql import (
     Client, Article, Facture, Devis, Reglement, Avoir, LigneAvoir,
     Utilisateur, Fournisseur, Entreprise, MouvementStock,
@@ -354,11 +355,9 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db_public)):
     
     # Vérifier que l'entreprise de l'utilisateur est active
     entreprise_user = db.query(Entreprise).filter(Entreprise.id_entreprise == user.id_entreprise).first()
-    if not entreprise_user or (entreprise_user.statut or "ACTIF").upper() not in ("ACTIF", "ESSAI"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Le compte de votre entreprise est suspendu. Contactez le support."
-        )
+    if not entreprise_user:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Entreprise introuvable")
+    verifier_acces_entreprise(entreprise_user)
 
     # Vérifier le mot de passe avec bcrypt
     try:
@@ -445,6 +444,102 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db_public)):
         access_token=access_token,
         token_type="bearer",
         utilisateur=utilisateur_response
+    )
+
+# ==================== INSCRIPTION (SaaS) ====================
+
+class InscriptionRequest(BaseModel):
+    nom_entreprise: str
+    nom_utilisateur: str
+    email: str
+    mot_de_passe: str
+    telephone: Optional[str] = None
+
+
+_inscriptions_par_ip: Dict[str, List[datetime]] = {}
+MAX_INSCRIPTIONS_PAR_HEURE = 5
+
+
+def _slug_unique(db: Session, nom: str) -> str:
+    import re, unicodedata
+    base = unicodedata.normalize("NFKD", nom).encode("ascii", "ignore").decode()
+    base = re.sub(r"[^a-z0-9]+", "-", base.lower()).strip("-")[:50] or "entreprise"
+    slug, i = base, 2
+    while db.query(Entreprise).filter(Entreprise.slug == slug).first():
+        slug, i = f"{base}-{i}", i + 1
+    return slug
+
+
+@app.post("/api/auth/inscription", response_model=LoginResponse)
+async def inscription(data: InscriptionRequest, request: Request, db: Session = Depends(get_db_public)):
+    """Créer une nouvelle entreprise (période d'essai) et son premier administrateur."""
+    import re
+
+    # Limite anti-abus : quelques inscriptions par heure et par adresse IP
+    ip = (request.headers.get("x-forwarded-for") or (request.client.host if request.client else "?")).split(",")[0].strip()
+    maintenant = datetime.now()
+    recentes = [t for t in _inscriptions_par_ip.get(ip, []) if t > maintenant - timedelta(hours=1)]
+    if len(recentes) >= MAX_INSCRIPTIONS_PAR_HEURE:
+        raise HTTPException(status_code=429, detail="Trop d'inscriptions depuis cette connexion. Réessayez plus tard.")
+
+    nom_entreprise = data.nom_entreprise.strip()
+    nom_utilisateur = data.nom_utilisateur.strip()
+    email = data.email.strip().lower()
+
+    if len(nom_entreprise) < 2:
+        raise HTTPException(status_code=400, detail="Le nom de l'entreprise est trop court")
+    if not re.fullmatch(r"[A-Za-z0-9._@-]{3,50}", nom_utilisateur):
+        raise HTTPException(status_code=400, detail="Identifiant invalide (3 à 50 caractères : lettres, chiffres, . _ - @)")
+    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+        raise HTTPException(status_code=400, detail="Adresse email invalide")
+    if len(data.mot_de_passe) < 8:
+        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins 8 caractères")
+
+    if db.query(Utilisateur).filter(func.lower(Utilisateur.nom_utilisateur) == nom_utilisateur.lower()).first():
+        raise HTTPException(status_code=409, detail="Cet identifiant est déjà utilisé")
+    if db.query(Utilisateur).filter(func.lower(Utilisateur.email) == email).first():
+        raise HTTPException(status_code=409, detail="Cette adresse email est déjà utilisée")
+
+    try:
+        entreprise = Entreprise(
+            nom=nom_entreprise,
+            email=email,
+            telephone=data.telephone,
+            slug=_slug_unique(db, nom_entreprise),
+            statut="ESSAI",
+            date_fin_essai=maintenant + timedelta(days=DUREE_ESSAI_JOURS),
+        )
+        db.add(entreprise)
+        db.flush()
+
+        admin = Utilisateur(
+            nom_utilisateur=nom_utilisateur,
+            email=email,
+            mot_de_passe=bcrypt.hash(data.mot_de_passe),
+            role="ADMIN",
+            statut="ACTIF",
+            telephone=data.telephone,
+            actif=True,
+            droits="TOUS",
+            derniere_connexion=maintenant,
+            id_entreprise=entreprise.id_entreprise,
+        )
+        db.add(admin)
+        db.commit()
+        db.refresh(admin)
+    except Exception as e:
+        db.rollback()
+        print(f"Erreur inscription: {e}")
+        raise HTTPException(status_code=400, detail="Impossible de créer le compte. Vérifiez les informations saisies.")
+
+    recentes.append(maintenant)
+    _inscriptions_par_ip[ip] = recentes
+    print(f"🆕 Nouvelle entreprise inscrite : {entreprise.nom} (id {entreprise.id_entreprise}, essai jusqu'au {entreprise.date_fin_essai:%d/%m/%Y})")
+
+    return LoginResponse(
+        access_token=creer_token(admin),
+        token_type="bearer",
+        utilisateur=UtilisateurResponse.model_validate(admin),
     )
 
 # ==================== CLIENTS ====================
