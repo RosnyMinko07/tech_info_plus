@@ -24,7 +24,9 @@ from passlib.hash import bcrypt
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Importer la configuration MySQL
-from database_mysql import get_db, test_connection, create_tables
+from database_mysql import test_connection, create_tables
+# Authentification SaaS : get_db = session authentifiée ET filtrée par entreprise
+from auth_saas import get_db, get_db_public, get_current_user_id, creer_token, require_admin
 from database_mysql import (
     Client, Article, Facture, Devis, Reglement, Avoir, LigneAvoir,
     Utilisateur, Fournisseur, Entreprise, MouvementStock,
@@ -42,24 +44,6 @@ except ImportError as e:
 
 # ==================== UTILITAIRES ====================
 
-def get_current_user_id(request: Request) -> int:
-    """Extraire l'ID utilisateur du token JWT"""
-    try:
-        auth_header = request.headers.get('Authorization')
-        if auth_header and auth_header.startswith('Bearer '):
-            token = auth_header.replace('Bearer ', '')
-            # Extraire l'ID utilisateur du token (format: token_{id}_{timestamp})
-            parts = token.split('_')
-            if len(parts) >= 2:
-                id_utilisateur = int(parts[1])
-                print(f"  🔑 ID utilisateur extrait du token: {id_utilisateur}")
-                return id_utilisateur
-    except (ValueError, IndexError) as e:
-        print(f"   ⚠️ Erreur extraction ID utilisateur: {e}")
-    
-    # Retourner 1 (admin) par défaut si le token est invalide
-    print(f"  ⚠️ Utilisation de l'utilisateur par défaut (ID: 1)")
-    return 1
 
 # Modèles Pydantic pour l'API
 class ClientCreate(BaseModel):
@@ -244,6 +228,7 @@ class UtilisateurResponse(BaseModel):
     date_creation: Optional[datetime] = None
     created_at: Optional[datetime] = None
     derniere_connexion: Optional[datetime] = None  # Dernière heure de connexion
+    id_entreprise: Optional[int] = None
 
     class Config:
         from_attributes = True
@@ -347,7 +332,7 @@ async def health_check():
 # ==================== AUTHENTIFICATION ====================
 
 @app.post("/api/auth/login", response_model=LoginResponse)
-async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
+async def login(login_data: LoginRequest, db: Session = Depends(get_db_public)):
     """Connexion utilisateur"""
     # Vérifier si l'utilisateur existe
     user = db.query(Utilisateur).filter(
@@ -367,6 +352,14 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
             detail="Ce compte est désactivé. Contactez l'administrateur"
         )
     
+    # Vérifier que l'entreprise de l'utilisateur est active
+    entreprise_user = db.query(Entreprise).filter(Entreprise.id_entreprise == user.id_entreprise).first()
+    if not entreprise_user or (entreprise_user.statut or "ACTIF").upper() not in ("ACTIF", "ESSAI"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Le compte de votre entreprise est suspendu. Contactez le support."
+        )
+
     # Vérifier le mot de passe avec bcrypt
     try:
         if not bcrypt.verify(login_data.mot_de_passe, user.mot_de_passe):
@@ -380,6 +373,8 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Mot de passe incorrect"
         )
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Erreur vérification mot de passe: {e}")
         raise HTTPException(
@@ -409,6 +404,8 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
             user = db.query(Utilisateur).filter(Utilisateur.id_utilisateur == user.id_utilisateur).first()
         
         print(f"✅ Dernière connexion mise à jour pour {user.nom_utilisateur}: {user.derniere_connexion}")
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"⚠️ Erreur mise à jour dernière connexion: {e}")
         import traceback
@@ -419,8 +416,8 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
         user.derniere_connexion = derniere_connexion_now
         print(f"⚠️ Valeur mise en mémoire uniquement: {user.derniere_connexion}")
     
-    # Créer le token (simplifié)
-    access_token = f"token_{user.id_utilisateur}_{datetime.now().timestamp()}"
+    # Créer le token JWT signé (utilisateur + entreprise)
+    access_token = creer_token(user)
     
     # S'assurer que derniere_connexion est bien défini dans l'objet user
     if not hasattr(user, 'derniere_connexion') or user.derniere_connexion is None:
@@ -430,6 +427,8 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
     # Utiliser model_validate au lieu de from_orm (Pydantic v2)
     try:
         utilisateur_response = UtilisateurResponse.model_validate(user)
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"⚠️ Erreur model_validate, fallback vers from_orm: {e}")
         # Fallback vers from_orm si model_validate ne fonctionne pas
@@ -495,6 +494,8 @@ async def get_client(client_id: int, db: Session = Depends(get_db)):
                 "derniere_facture": derniere_facture.date_facture if derniere_facture else None
             }
         }
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Erreur get_client: {e}")
         import traceback
@@ -537,6 +538,8 @@ async def update_client(client_id: int, data: dict, db: Session = Depends(get_db
         
         print(f"  Client {db_client.nom} modifié avec succès!")
         return db_client
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         print(f"  ERREUR modification client: {e}")
@@ -605,6 +608,8 @@ async def generate_code_article(db: Session = Depends(get_db)):
         next_num = (last_article.id_article + 1) if last_article else 1
         code = f"ART-{next_num:04d}"
         return code
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Erreur génération code: {e}")
         return "ART-0001"
@@ -621,6 +626,8 @@ async def get_articles(skip: int = 0, limit: int = 100, inclure_inactifs: bool =
         
         articles = query.offset(skip).limit(limit).all()
         return articles
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Erreur chargement articles: {e}")
         import traceback
@@ -685,6 +692,8 @@ async def get_article(article_id: int, db: Session = Depends(get_db)):
                 "derniere_vente": derniere_vente.facture.date_facture if derniere_vente else None
             }
         }
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Erreur get_article: {e}")
         import traceback
@@ -706,6 +715,8 @@ async def create_article(article: ArticleCreate, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(db_article)
         return db_article
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         print(f"Erreur création article: {e}")
@@ -778,6 +789,8 @@ async def get_mouvements(skip: int = 0, limit: int = 100, db: Session = Depends(
                 "motif": mvt.motif if hasattr(mvt, 'motif') else None
             })
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Erreur chargement mouvements: {e}")
         raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
@@ -837,6 +850,8 @@ async def create_mouvement(mouvement: MouvementCreate, db: Session = Depends(get
         db.commit()
         db.refresh(nouveau_mvt)
         return nouveau_mvt
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         print(f"Erreur création mouvement: {e}")
@@ -897,6 +912,8 @@ async def get_factures(
                 "cree_par": utilisateur.nom_utilisateur if utilisateur else "Système"  # 🔥 Nom du créateur
             })
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Erreur chargement factures: {e}")
         raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
@@ -1129,6 +1146,8 @@ async def create_facture(data: dict, request: Request, db: Session = Depends(get
             "statut": statut,
             "client_nom": client.nom if client else "N/A"
         }
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         print(f"  ERREUR création facture: {e}")
@@ -1172,6 +1191,8 @@ async def update_facture(facture_id: int, data: dict, db: Session = Depends(get_
             facture.type_facture = data.get('type_facture', facture.type_facture)
             
             print(f"  DEBUG - Champs mis à jour avec succès")
+        except HTTPException:
+            raise
         except Exception as e:
             print(f"  DEBUG - Erreur lors de la mise à jour des champs: {e}")
             raise
@@ -1214,6 +1235,8 @@ async def update_facture(facture_id: int, data: dict, db: Session = Depends(get_
             "statut": facture.statut,
             "client_nom": client.nom if client else "N/A"
         }
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         print(f"  ERREUR modification facture: {e}")
@@ -1382,6 +1405,8 @@ async def get_devis(skip: int = 0, limit: int = 100, db: Session = Depends(get_d
             result.append(devis_dict)
         
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Erreur chargement devis: {e}")
         import traceback
@@ -1487,6 +1512,8 @@ async def create_devis(devis: DevisCreate, request: Request, db: Session = Depen
         print("  DEVIS CRÉÉ AVEC SUCCÈS")
         return db_devis
         
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"  ERREUR CRÉATION DEVIS: {e}")
         import traceback
@@ -1656,6 +1683,8 @@ async def update_devis(devis_id: int, data: dict, db: Session = Depends(get_db))
             "statut": db_devis.statut,
             "client_nom": client.nom if client else "N/A"
         }
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         print(f"  ERREUR modification devis: {e}")
@@ -1849,6 +1878,8 @@ async def get_dashboard_stats(db: Session = Depends(get_db)):
             "ca_total": float(ca_total),
             "creances": float(creances)
         }
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Erreur récupération stats dashboard: {e}")
         import traceback
@@ -1957,6 +1988,8 @@ async def get_ventes_par_mois(db: Session = Depends(get_db)):
             "annee": annee_actuelle
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Erreur ventes par mois: {e}")
         import traceback
@@ -2012,6 +2045,8 @@ async def get_activite_recente(db: Session = Depends(get_db)):
         
         return activites
         
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Erreur activité récente: {e}")
         import traceback
@@ -2094,6 +2129,8 @@ async def get_fournisseur(fournisseur_id: int, db: Session = Depends(get_db)):
                 "dernier_article": dernier_article.created_at if dernier_article else None
             }
         }
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Erreur get_fournisseur: {e}")
         import traceback
@@ -2137,6 +2174,8 @@ async def update_fournisseur(fournisseur_id: int, data: dict, db: Session = Depe
         
         print(f"  Fournisseur {db_fournisseur.nom_fournisseur} modifié avec succès!")
         return db_fournisseur
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         print(f"  ERREUR modification fournisseur: {e}")
@@ -2192,6 +2231,8 @@ async def get_reglements(db: Session = Depends(get_db)):
             result.append(reglement_dict)
         
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Erreur chargement règlements: {e}")
         import traceback
@@ -2216,6 +2257,8 @@ async def get_reglements_facture(facture_id: int, db: Session = Depends(get_db))
             })
         
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Erreur récupération règlements facture: {e}")
         return []
@@ -2257,6 +2300,8 @@ async def get_reglement(reglement_id: int, db: Session = Depends(get_db)):
                 "email": client.email if client else None
             } if client else None
         }
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Erreur get_reglement: {e}")
         import traceback
@@ -2350,6 +2395,8 @@ async def create_reglement(reglement: dict, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(new_reglement)
         return new_reglement
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         print(f"Erreur création règlement: {e}")
@@ -2420,6 +2467,8 @@ async def get_avoirs(db: Session = Depends(get_db)):
             result.append(avoir_dict)
         
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Erreur chargement avoirs: {e}")
         import traceback
@@ -2435,6 +2484,8 @@ async def generate_numero_avoir(db: Session = Depends(get_db)):
         year = datetime.now().year
         numero_avoir = f"AVO-{year}-{next_num:03d}"
         return {"numero_avoir": numero_avoir}  # Retourner un JSON au lieu d'une chaîne
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"  Erreur génération numéro avoir: {e}")
         import traceback
@@ -2497,6 +2548,8 @@ async def get_avoir_details(avoir_id: int, db: Session = Depends(get_db)):
             "facture_numero": facture.numero_facture if facture else None,
             "lignes": lignes_data
         }
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"  ERREUR GET AVOIR DETAILS: {e}")
         import traceback
@@ -2541,6 +2594,8 @@ async def create_avoir(avoir: dict, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(new_avoir)
         return new_avoir
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         print(f"  Erreur création avoir: {e}")
@@ -2621,6 +2676,8 @@ async def update_avoir(avoir_id: int, data: dict, db: Session = Depends(get_db))
             "montant_tva": 0.0,
             "montant_ttc": float(db_avoir.montant)
         }
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         print(f"  ERREUR MODIFICATION AVOIR: {e}")
@@ -2673,6 +2730,8 @@ async def get_lignes_avoir(avoir_id: int, db: Session = Depends(get_db)):
             })
         
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Erreur chargement lignes avoir: {e}")
         import traceback
@@ -2703,6 +2762,8 @@ async def get_articles_facture_pour_avoir(facture_id: int, db: Session = Depends
             })
         
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Erreur chargement articles facture: {e}")
         import traceback
@@ -2829,6 +2890,8 @@ async def valider_avoir(avoir_id: int, db: Session = Depends(get_db)):
                     LigneFacture.id_facture == facture.id_facture
                 ).all()
                 print(f"  {len(lignes_avoir)} ligne(s) de facture trouvée(s)")
+        except HTTPException:
+            raise
         except Exception as e:
             print(f"  Erreur récupération lignes: {e}")
             lignes_avoir = []
@@ -2932,6 +2995,8 @@ async def get_mouvements(skip: int = 0, limit: int = 100, db: Session = Depends(
             result.append(mouvement_dict)
         
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Erreur chargement mouvements: {e}")
         import traceback
@@ -2966,6 +3031,8 @@ async def create_mouvement(mouvement: dict, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(new_mouvement)
         return new_mouvement
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         print(f"Erreur création mouvement: {e}")
@@ -3009,6 +3076,8 @@ async def get_stock_stats(db: Session = Depends(get_db)):
             "critique": critique,
             "valeur": valeur
         }
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Erreur stats stock: {e}")
         return {"total": 0, "faible": 0, "critique": 0, "valeur": 0}
@@ -3018,13 +3087,13 @@ async def get_stock_stats(db: Session = Depends(get_db)):
 # UTILISATEURS
 # ============================================================================
 
-@app.get("/api/utilisateurs")
+@app.get("/api/utilisateurs", response_model=List[UtilisateurResponse])
 async def get_utilisateurs(db: Session = Depends(get_db)):
     """Récupérer tous les utilisateurs"""
     utilisateurs = db.query(Utilisateur).all()
     return utilisateurs
 
-@app.get("/api/utilisateurs/{utilisateur_id}")
+@app.get("/api/utilisateurs/{utilisateur_id}", response_model=UtilisateurResponse)
 async def get_utilisateur(utilisateur_id: int, db: Session = Depends(get_db)):
     """Récupérer un utilisateur par ID"""
     utilisateur = db.query(Utilisateur).filter(Utilisateur.id_utilisateur == utilisateur_id).first()
@@ -3032,21 +3101,23 @@ async def get_utilisateur(utilisateur_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
     return utilisateur
 
-@app.post("/api/utilisateurs")
-async def create_utilisateur(utilisateur: dict, db: Session = Depends(get_db)):
+@app.post("/api/utilisateurs", response_model=UtilisateurResponse)
+async def create_utilisateur(utilisateur: dict, db: Session = Depends(require_admin)):
     """Créer un nouvel utilisateur"""
     # Hasher le mot de passe si fourni
     if "mot_de_passe" in utilisateur:
         utilisateur["mot_de_passe"] = bcrypt.hash(utilisateur["mot_de_passe"])
     
+    for cle in ("id_utilisateur", "id_entreprise", "derniere_connexion"):
+        utilisateur.pop(cle, None)
     new_utilisateur = Utilisateur(**utilisateur)
     db.add(new_utilisateur)
     db.commit()
     db.refresh(new_utilisateur)
     return new_utilisateur
 
-@app.put("/api/utilisateurs/{utilisateur_id}")
-async def update_utilisateur(utilisateur_id: int, utilisateur: dict, db: Session = Depends(get_db)):
+@app.put("/api/utilisateurs/{utilisateur_id}", response_model=UtilisateurResponse)
+async def update_utilisateur(utilisateur_id: int, utilisateur: dict, db: Session = Depends(require_admin)):
     """Mettre à jour un utilisateur"""
     db_utilisateur = db.query(Utilisateur).filter(Utilisateur.id_utilisateur == utilisateur_id).first()
     if not db_utilisateur:
@@ -3057,6 +3128,8 @@ async def update_utilisateur(utilisateur_id: int, utilisateur: dict, db: Session
         utilisateur["mot_de_passe"] = bcrypt.hash(utilisateur["mot_de_passe"])
     
     for key, value in utilisateur.items():
+        if key in ("id_utilisateur", "id_entreprise", "derniere_connexion"):
+            continue
         setattr(db_utilisateur, key, value)
     
     db.commit()
@@ -3064,18 +3137,20 @@ async def update_utilisateur(utilisateur_id: int, utilisateur: dict, db: Session
     return db_utilisateur
 
 @app.delete("/api/utilisateurs/{utilisateur_id}")
-async def delete_utilisateur(utilisateur_id: int, db: Session = Depends(get_db)):
+async def delete_utilisateur(utilisateur_id: int, request: Request, db: Session = Depends(require_admin)):
     """Supprimer un utilisateur"""
     utilisateur = db.query(Utilisateur).filter(Utilisateur.id_utilisateur == utilisateur_id).first()
     if not utilisateur:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    if utilisateur.id_utilisateur == get_current_user_id(request):
+        raise HTTPException(status_code=400, detail="Vous ne pouvez pas supprimer votre propre compte")
     
     db.delete(utilisateur)
     db.commit()
     return {"message": "Utilisateur supprimé avec succès"}
 
 @app.put("/api/utilisateurs/{utilisateur_id}/droits")
-async def update_droits_utilisateur(utilisateur_id: int, droits_data: dict, db: Session = Depends(get_db)):
+async def update_droits_utilisateur(utilisateur_id: int, droits_data: dict, db: Session = Depends(require_admin)):
     """Mettre à jour les droits d'un utilisateur"""
     utilisateur = db.query(Utilisateur).filter(Utilisateur.id_utilisateur == utilisateur_id).first()
     if not utilisateur:
@@ -3099,11 +3174,13 @@ async def update_droits_utilisateur(utilisateur_id: int, droits_data: dict, db: 
         
         db.commit()
         db.refresh(utilisateur)
-        return {"message": "Droits mis à jour avec succès", "utilisateur": utilisateur}
+        return {"message": "Droits mis à jour avec succès", "utilisateur": UtilisateurResponse.model_validate(utilisateur)}
     except json.JSONDecodeError as e:
         db.rollback()
         print(f"❌ Erreur parsing JSON droits: {e}")
         raise HTTPException(status_code=400, detail=f"Format JSON invalide: {str(e)}")
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         print(f"❌ Erreur mise à jour droits: {e}")
@@ -3159,6 +3236,8 @@ async def valider_inventaire(ajustements: dict, db: Session = Depends(get_db)):
             "ajustements": ajustements_count
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         print(f"  Erreur validation inventaire: {e}")
@@ -3491,6 +3570,8 @@ async def get_rapport(type_rapport: str, periode: str = "ce_mois", db: Session =
         
         return {"error": "Type de rapport inconnu"}
         
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Erreur génération rapport: {e}")
         import traceback
@@ -3510,11 +3591,7 @@ async def get_rapport(type_rapport: str, periode: str = "ce_mois", db: Session =
 @app.get("/api/auth/me")
 async def get_current_user_info(db: Session = Depends(get_db)):
     """Récupérer les informations de l'utilisateur connecté"""
-    # Pour l'instant, retourner l'admin par défaut
-    utilisateur = db.query(Utilisateur).filter(Utilisateur.nom_utilisateur == "admin").first()
-    if not utilisateur:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
-    return utilisateur
+    return UtilisateurResponse.model_validate(db.info["user"])
 
 
 # Fonction de démarrage
@@ -3539,6 +3616,8 @@ async def startup_event():
         else:
             print("  ❌ ERREUR: Impossible de se connecter à MySQL")
             print("  💡 Vérifiez que XAMPP MySQL est démarré sur le port 3306")
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"  ❌ Erreur initialisation base de données: {str(e)}")
     
@@ -3570,29 +3649,31 @@ async def get_entreprise_config(db: Session = Depends(get_db)):
                 "compte_bancaire": entreprise.compte_bancaire if hasattr(entreprise, 'compte_bancaire') else None
             }
         return None
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Erreur chargement config entreprise: {e}")
         return None
 
 @app.post("/api/entreprise/config")
-async def update_entreprise_config(config: dict, db: Session = Depends(get_db)):
-    """Mettre à jour la configuration de l'entreprise"""
+async def update_entreprise_config(config: dict, db: Session = Depends(require_admin)):
+    """Mettre à jour la configuration de l'entreprise de l'utilisateur connecté"""
+    CHAMPS_MODIFIABLES = {"nom", "adresse", "telephone", "email", "nif", "logo_path",
+                          "taux_tva", "devise", "slogan", "site_web", "compte_bancaire"}
     try:
-        entreprise = db.query(Entreprise).first()
-        
-        if entreprise:
-            # Mise à jour
-            for key, value in config.items():
-                if hasattr(entreprise, key):
-                    setattr(entreprise, key, value)
-        else:
-            # Création
-            entreprise = Entreprise(**config)
-            db.add(entreprise)
-        
+        entreprise = db.query(Entreprise).first()  # session filtrée : uniquement SON entreprise
+        if not entreprise:
+            raise HTTPException(status_code=404, detail="Entreprise introuvable")
+
+        for key, value in config.items():
+            if key in CHAMPS_MODIFIABLES and hasattr(entreprise, key):
+                setattr(entreprise, key, value)
+
         db.commit()
         db.refresh(entreprise)
         return {"message": "Configuration enregistrée avec succès", "entreprise": entreprise}
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         print(f"Erreur mise à jour config: {e}")
@@ -3644,6 +3725,8 @@ async def get_all_bugs(db: Session = Depends(get_db)):
             "role": bug.role
         } for bug in bugs]
         
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Erreur récupération bugs: {e}")
         import traceback
@@ -3678,6 +3761,8 @@ async def get_bugs_stats(db: Session = Depends(get_db)):
             "resolus_mois": resolus_mois
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Erreur stats bugs: {e}")
         return {"total": 0, "ouverts": 0, "resolus_mois": 0}
@@ -3687,20 +3772,7 @@ async def create_bug(bug: dict, request: Request, db: Session = Depends(get_db))
     """Créer un nouveau signalement de bug"""
     try:
         # Récupérer l'utilisateur depuis le token
-        auth_header = request.headers.get('Authorization')
-        id_utilisateur = 1  # Valeur par défaut
-        
-        if auth_header and auth_header.startswith('Bearer '):
-            token = auth_header.replace('Bearer ', '')
-            # Extraire l'ID utilisateur du token (format: token_{id}_{timestamp})
-            try:
-                parts = token.split('_')
-                if len(parts) >= 2:
-                    id_utilisateur = int(parts[1])
-                    print(f"  ID utilisateur extrait du token: {id_utilisateur}")
-            except (ValueError, IndexError) as e:
-                print(f"   Erreur extraction ID utilisateur: {e}")
-                # Garder la valeur par défaut
+        id_utilisateur = get_current_user_id(request)
         
         print(f"🐛 Création bug par utilisateur ID: {id_utilisateur}")
         print(f"   Titre: {bug.get('titre')}")
@@ -3724,6 +3796,8 @@ async def create_bug(bug: dict, request: Request, db: Session = Depends(get_db))
             "id_signalement": nouveau_bug.id_signalement
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         print(f"  Erreur création bug: {e}")
@@ -3794,7 +3868,7 @@ async def delete_bug(bug_id: int, db: Session = Depends(get_db)):
 from fastapi import APIRouter
 
 @app.delete("/api/admin/nettoyage/all")
-async def purge_all_data(db: Session = Depends(get_db)):
+async def purge_all_data(db: Session = Depends(require_admin)):
     """
     Attention: Cette route supprime toutes les données métier (ordre intégrité FK):
     LignesAvoir -> Avoir -> LigneFacture -> LigneDevis -> Reglement -> Facture -> Devis -> LigneVente -> VenteComptoir -> MouvementStock -> Article/Client/Fournisseur/Bug
@@ -3817,6 +3891,8 @@ async def purge_all_data(db: Session = Depends(get_db)):
         db.query(SignalementBug).delete()
         db.commit()
         return {"message": "Toutes les données métiers (hors utilisateurs et config) ont été effacées avec succès."}
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Erreur lors du nettoyage: {str(e)}")

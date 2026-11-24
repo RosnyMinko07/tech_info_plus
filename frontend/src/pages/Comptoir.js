@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaShoppingCart, FaSearch, FaTrash, FaCheck, FaPrint, FaHistory, FaUndo } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import { comptoirService, articleService, formatMontant } from '../services/api';
+import api, { comptoirService, articleService, formatMontant } from '../services/api';
 import { confirmClearCart, confirmAction, confirmDelete } from '../utils/sweetAlertHelper';
 import '../styles/Comptoir.css';
 
@@ -72,9 +72,8 @@ function Comptoir() {
 
     const loadEntrepriseInfo = async () => {
         try {
-            const response = await fetch(`/api/entreprise/config`);
-            const data = await response.json();
-            setEntreprise(data);
+            const response = await api.get('/api/entreprise/config');
+            setEntreprise(response.data);
         } catch (error) {
             console.error('Erreur chargement entreprise:', error);
         }

@@ -52,8 +52,9 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Déconnexion automatique si non autorisé
+    const isLogin = (error.config?.url || '').includes('/api/auth/login');
+    if (error.response?.status === 401 && !isLogin) {
+      // Déconnexion automatique si non autorisé (sauf échec de connexion)
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';

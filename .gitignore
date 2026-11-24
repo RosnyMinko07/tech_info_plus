@@ -88,3 +88,6 @@ TECH_INFO_PLUS_Installer.exe
 # Fichiers git temporaires
 git
 pla.puml
+
+# Sauvegardes de la base (données clients)
+backend/sauvegardes/

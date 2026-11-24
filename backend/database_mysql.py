@@ -5,7 +5,8 @@ TECH INFO PLUS - CONFIGURATION MYSQL
 Modèles SQLAlchemy pour MySQL
 """
 
-from sqlalchemy import create_engine, Column, Integer, String, Float, Date, DateTime, Boolean, Text, ForeignKey, CheckConstraint, text
+from sqlalchemy import create_engine, Column, Integer, String, Float, Date, DateTime, Boolean, Text, ForeignKey, CheckConstraint, UniqueConstraint, text, event
+from sqlalchemy.orm import declared_attr, with_loader_criteria
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from datetime import datetime
 import os
@@ -34,6 +35,16 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 # Base pour les modèles
 Base = declarative_base()
 
+
+# ==================== MULTI-ENTREPRISE (SaaS) ====================
+
+class TenantMixin:
+    """Toute table métier appartient à une entreprise."""
+    @declared_attr
+    def id_entreprise(cls):
+        return Column(Integer, ForeignKey('entreprise.id_entreprise'), nullable=False, index=True)
+
+
 # ==================== MODÈLES ====================
 
 class Entreprise(Base):
@@ -48,10 +59,13 @@ class Entreprise(Base):
     logo_path = Column(String(500))
     taux_tva = Column(Float, default=9.5)
     devise = Column(String(10), default='FCFA')
+    slug = Column(String(60), unique=True)
+    statut = Column(String(20), nullable=False, default='ACTIF')  # ESSAI, ACTIF, SUSPENDU, RESILIE
+    date_fin_essai = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.now)
 
 
-class Utilisateur(Base):
+class Utilisateur(TenantMixin, Base):
     __tablename__ = 'utilisateur'
     
     id_utilisateur = Column(Integer, primary_key=True, autoincrement=True)
@@ -68,11 +82,12 @@ class Utilisateur(Base):
     derniere_connexion = Column(DateTime, nullable=True)  # Dernière heure de connexion
 
 
-class Client(Base):
+class Client(TenantMixin, Base):
     __tablename__ = 'client'
+    __table_args__ = (UniqueConstraint('id_entreprise', 'numero_client', name='uq_client_entreprise_numero_client'),)
     
     id_client = Column(Integer, primary_key=True, autoincrement=True)
-    numero_client = Column(String(20), unique=True)
+    numero_client = Column(String(20))
     nom = Column(String(100), nullable=False)
     type_client = Column(String(20))
     ville = Column(String(50))
@@ -87,8 +102,9 @@ class Client(Base):
     factures = relationship("Facture", back_populates="client")
 
 
-class Fournisseur(Base):
+class Fournisseur(TenantMixin, Base):
     __tablename__ = 'fournisseur'
+    __table_args__ = (UniqueConstraint('id_entreprise', 'numero_fournisseur', name='uq_fournisseur_entreprise_numero_fournisseur'),)
     
     id_fournisseur = Column(Integer, primary_key=True, autoincrement=True)
     numero_fournisseur = Column(String(20))
@@ -105,11 +121,12 @@ class Fournisseur(Base):
     articles = relationship("Article", back_populates="fournisseur")
 
 
-class Article(Base):
+class Article(TenantMixin, Base):
     __tablename__ = 'article'
+    __table_args__ = (UniqueConstraint('id_entreprise', 'code_article', name='uq_article_entreprise_code_article'),)
     
     id_article = Column(Integer, primary_key=True, autoincrement=True)
-    code_article = Column(String(50), unique=True)
+    code_article = Column(String(50))
     designation = Column(String(100), nullable=False)
     description = Column(Text)
     type_article = Column(String(20), default='PRODUIT')  # PRODUIT ou SERVICE
@@ -135,11 +152,12 @@ class Article(Base):
     mouvements = relationship("MouvementStock", back_populates="article")
 
 
-class Devis(Base):
+class Devis(TenantMixin, Base):
     __tablename__ = 'devis'
+    __table_args__ = (UniqueConstraint('id_entreprise', 'numero_devis', name='uq_devis_entreprise_numero_devis'),)
     
     id_devis = Column(Integer, primary_key=True, autoincrement=True)
-    numero_devis = Column(String(20), unique=True, nullable=False)
+    numero_devis = Column(String(20), nullable=False)
     id_client = Column(Integer, ForeignKey('client.id_client'), nullable=False)
     id_utilisateur = Column(Integer, ForeignKey('utilisateur.id_utilisateur'))  # 🔥 Utilisateur créateur
     date_devis = Column(Date, nullable=False)
@@ -176,7 +194,7 @@ class Devis(Base):
         self.total_ttc = value
 
 
-class LigneDevis(Base):
+class LigneDevis(TenantMixin, Base):
     __tablename__ = 'ligne_devis'
     
     id_ligne = Column('id_ligne', Integer, primary_key=True, autoincrement=True)
@@ -191,11 +209,12 @@ class LigneDevis(Base):
     article = relationship("Article", back_populates="lignes_devis")
 
 
-class Facture(Base):
+class Facture(TenantMixin, Base):
     __tablename__ = 'facture'
+    __table_args__ = (UniqueConstraint('id_entreprise', 'numero_facture', name='uq_facture_entreprise_numero_facture'),)
     
     id_facture = Column(Integer, primary_key=True, autoincrement=True)
-    numero_facture = Column(String(20), unique=True, nullable=False)
+    numero_facture = Column(String(20), nullable=False)
     type_facture = Column(String(20), default='NORMALE')  # NORMALE, COMPTOIR, RETOUR
     id_utilisateur = Column(Integer, ForeignKey('utilisateur.id_utilisateur'))
     id_client = Column(Integer, ForeignKey('client.id_client'))  # Nullable pour comptoir
@@ -237,7 +256,7 @@ class Facture(Base):
     reglements = relationship("Reglement", back_populates="facture")
 
 
-class LigneFacture(Base):
+class LigneFacture(TenantMixin, Base):
     __tablename__ = 'ligne_facture'
     
     id_ligne_facture = Column(Integer, primary_key=True, autoincrement=True, name='id_ligne')
@@ -269,11 +288,12 @@ class LigneFacture(Base):
     article = relationship("Article", back_populates="lignes_facture")
 
 
-class Reglement(Base):
+class Reglement(TenantMixin, Base):
     __tablename__ = 'reglement'
+    __table_args__ = (UniqueConstraint('id_entreprise', 'numero_reglement', name='uq_reglement_entreprise_numero_reglement'),)
     
     id_reglement = Column(Integer, primary_key=True, autoincrement=True)
-    numero_reglement = Column(String(20), unique=True)
+    numero_reglement = Column(String(20))
     date_reglement = Column(Date, nullable=False)
     montant = Column(Float, nullable=False, default=0.0)
     mode_paiement = Column(String(50), nullable=False)
@@ -285,11 +305,12 @@ class Reglement(Base):
     facture = relationship("Facture", back_populates="reglements")
 
 
-class Avoir(Base):
+class Avoir(TenantMixin, Base):
     __tablename__ = 'avoir'
+    __table_args__ = (UniqueConstraint('id_entreprise', 'numero_avoir', name='uq_avoir_entreprise_numero_avoir'),)
     
     id_avoir = Column(Integer, primary_key=True, autoincrement=True)
-    numero_avoir = Column(String(100), unique=True, nullable=False)
+    numero_avoir = Column(String(100), nullable=False)
     id_facture = Column(Integer, ForeignKey('facture.id_facture'))
     date_avoir = Column(Date, nullable=False)
     montant = Column(Float, nullable=False, default=0.0)  # ✅ Correspond à la table MySQL
@@ -318,7 +339,7 @@ class Avoir(Base):
     lignes = relationship("LigneAvoir", back_populates="avoir", cascade="all, delete-orphan")
 
 
-class LigneAvoir(Base):
+class LigneAvoir(TenantMixin, Base):
     __tablename__ = 'ligne_avoir'
     
     id_ligne_avoir = Column(Integer, primary_key=True, autoincrement=True, name='id_ligne')
@@ -349,7 +370,7 @@ class LigneAvoir(Base):
 # - stock : Peut avoir été utilisée par erreur
 # Le stock actuel est dans article.stock_actuel
 
-class Stock(Base):
+class Stock(TenantMixin, Base):
     __tablename__ = 'stock'
     
     id_stock = Column(Integer, primary_key=True, autoincrement=True)
@@ -360,7 +381,7 @@ class Stock(Base):
     date_mouvement = Column(DateTime)
 
 
-class MouvementStock(Base):
+class MouvementStock(TenantMixin, Base):
     __tablename__ = 'mouvement_stock'  # LA VRAIE TABLE DES MOUVEMENTS
     
     id_mouvement = Column(Integer, primary_key=True, autoincrement=True)
@@ -374,7 +395,7 @@ class MouvementStock(Base):
     article = relationship("Article", back_populates="mouvements")
 
 
-class SignalementBug(Base):
+class SignalementBug(TenantMixin, Base):
     __tablename__ = 'signalement_bug'
     
     id_signalement = Column(Integer, primary_key=True, autoincrement=True)
@@ -387,11 +408,12 @@ class SignalementBug(Base):
     id_utilisateur = Column(Integer, ForeignKey('utilisateur.id_utilisateur'))
 
 
-class VenteComptoir(Base):
+class VenteComptoir(TenantMixin, Base):
     __tablename__ = 'vente_comptoir'
+    __table_args__ = (UniqueConstraint('id_entreprise', 'numero_vente', name='uq_vente_comptoir_entreprise_numero_vente'),)
     
     id_vente = Column(Integer, primary_key=True, autoincrement=True)
-    numero_vente = Column(String(20), unique=True, nullable=False)
+    numero_vente = Column(String(20), nullable=False)
     date_vente = Column(DateTime, default=datetime.now, nullable=False)
     montant_total = Column(Float, nullable=False, default=0.0)
     mode_paiement = Column(String(20), nullable=False)
@@ -401,7 +423,7 @@ class VenteComptoir(Base):
     lignes = relationship("LigneVente", back_populates="vente", cascade="all, delete-orphan")
 
 
-class LigneVente(Base):
+class LigneVente(TenantMixin, Base):
     __tablename__ = 'ligne_vente'
     
     id_ligne = Column(Integer, primary_key=True, autoincrement=True)
@@ -414,6 +436,43 @@ class LigneVente(Base):
     # Relations
     vente = relationship("VenteComptoir", back_populates="lignes")
     article = relationship("Article")
+
+
+# ==================== FILTRE AUTOMATIQUE PAR ENTREPRISE ====================
+# Quand une session porte db.info["id_entreprise"], TOUTES les requêtes ORM
+# (SELECT, UPDATE, DELETE, jointures, relations) sont limitées à cette
+# entreprise, et chaque nouvel objet y est rattaché automatiquement.
+# Une session sans id_entreprise (login, démarrage) n'est pas filtrée.
+
+@event.listens_for(SessionLocal, "do_orm_execute")
+def _filtrer_par_entreprise(execute_state):
+    id_ent = execute_state.session.info.get("id_entreprise")
+    if id_ent is None:
+        return
+    if not (execute_state.is_select or execute_state.is_update or execute_state.is_delete):
+        return
+    execute_state.statement = execute_state.statement.options(
+        with_loader_criteria(TenantMixin, lambda cls: cls.id_entreprise == id_ent, include_aliases=True),
+        with_loader_criteria(Entreprise, Entreprise.id_entreprise == id_ent, include_aliases=True),
+    )
+
+
+@event.listens_for(SessionLocal, "before_flush")
+def _rattacher_a_entreprise(session, flush_context, instances):
+    id_ent = session.info.get("id_entreprise")
+    if id_ent is None:
+        return
+    for obj in session.new:
+        if isinstance(obj, TenantMixin):
+            if obj.id_entreprise is None:
+                obj.id_entreprise = id_ent
+            elif obj.id_entreprise != id_ent:
+                raise PermissionError("Écriture refusée : objet d'une autre entreprise")
+        elif isinstance(obj, Entreprise):
+            raise PermissionError("Création d'entreprise interdite depuis une session d'entreprise")
+    for obj in session.dirty:
+        if isinstance(obj, TenantMixin) and obj.id_entreprise != id_ent:
+            raise PermissionError("Modification refusée : objet d'une autre entreprise")
 
 
 # ==================== FONCTIONS UTILITAIRES ====================

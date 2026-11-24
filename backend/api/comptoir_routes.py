@@ -15,29 +15,12 @@ import os
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from database_mysql import get_db, Article, MouvementStock, Facture, LigneFacture, Utilisateur, Client
+from auth_saas import get_db, get_current_user_id
+from database_mysql import Article, MouvementStock, Facture, LigneFacture, Utilisateur, Client
 
 router = APIRouter(prefix="/api/comptoir", tags=["Comptoir"])
 
 
-def get_current_user_id(request: Request) -> int:
-    """Extraire l'ID utilisateur du token JWT"""
-    try:
-        auth_header = request.headers.get('Authorization')
-        if auth_header and auth_header.startswith('Bearer '):
-            token = auth_header.replace('Bearer ', '')
-            # Extraire l'ID utilisateur du token (format: token_{id}_{timestamp})
-            parts = token.split('_')
-            if len(parts) >= 2:
-                id_utilisateur = int(parts[1])
-                print(f"  🔑 ID utilisateur extrait du token: {id_utilisateur}")
-                return id_utilisateur
-    except (ValueError, IndexError) as e:
-        print(f"   ⚠️ Erreur extraction ID utilisateur: {e}")
-    
-    # Retourner 1 (admin) par défaut si le token est invalide
-    print(f"  ⚠️ Utilisation de l'utilisateur par défaut (ID: 1)")
-    return 1
 
 
 class ArticleComptoirResponse(BaseModel):
@@ -144,6 +127,8 @@ async def verifier_ventes_aujourdhui(db: Session = Depends(get_db)):
             "articles_vendus": [{"id_article": aid} for aid in articles_vendus]
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur vérification ventes: {str(e)}")
 
@@ -482,6 +467,8 @@ async def get_ventes_comptoir(
         
         return ventes_data
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur récupération ventes: {str(e)}")
 
